@@ -11,7 +11,7 @@ tools**, talk to each other **asynchronously**, and are reachable by a human ove
 
 ### Option A — one command (Docker)
 ```bash
-cp .env.example .env        # optional: add LLM_API_KEY / TELEGRAM_BOT_TOKEN
+cp .env.example .env        # add LLM_API_KEY / TELEGRAM_BOT_TOKEN
 docker compose up --build   # Postgres + Redis + API + Web
 ```
 - Web UI → http://localhost:5173
@@ -58,13 +58,94 @@ Set these three fields in `.env`:
 1. Open the UI → **Builder** tab → click **+ Research → Write → Review** to instantiate the template.
 2. Type a task (e.g. *"Write a launch tweet for feature X"*) and hit **Run ▶**.
 3. Switch to **Monitor** to watch inter-agent messages, the run log, and live token/cost.
-   Note the **Reviewer → Writer feedback loop** firing before approval.
+
+---
+
+## API
+
+Base URL: `http://localhost:8000` — all bodies are JSON.
+
+### Agents
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/agents` | Create an agent |
+| `GET` | `/api/agents` | List all agents |
+| `GET` | `/api/agents/tools` | List available tools (calculator, http_get, current_time) |
+| `GET` | `/api/agents/{id}` | Get a single agent |
+| `PATCH` | `/api/agents/{id}` | Update agent fields |
+| `DELETE` | `/api/agents/{id}` | Delete an agent |
+
+### Templates
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/templates` | List built-in templates |
+
+### Workflows
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/workflows/from-template` | Instantiate a template as a saved workflow |
+| `GET` | `/api/workflows` | List all workflows |
+| `GET` | `/api/workflows/{id}` | Get a workflow including full graph_spec |
+| `PATCH` | `/api/workflows/{id}` | Update name, description, or graph_spec |
+| `POST` | `/api/workflows/{id}/run` | Execute a workflow — blocks until all agents finish |
+
+### Runs
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/runs?limit=N` | List recent runs, newest first (default limit 50) |
+| `GET` | `/api/runs/{id}` | Get run detail with all messages and per-agent token usage |
+
+### WebSocket
+| | Endpoint | Description |
+|---|---|---|
+| `WS` | `/ws/events` | Live stream of all run events |
+
+### Health
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Server status, active LLM provider, Telegram state |
+
+---
+
+## WebSocket — how it works
+
+`WS /ws/events` is a **passive subscriber** — the browser connects once and then
+waits. Events are pushed automatically whenever a workflow run executes.
+
+```
+Browser connects to WS /ws/events
+        │
+        └── bus.subscribe() opens a Queue — sits idle
+
+POST /api/workflows/{id}/run called
+        │
+        └── each node/tool/LLM step calls bus.publish(event)
+                    │
+                    └── event is put into every subscriber's Queue
+                                │
+                                └── ws.py forwards it to the browser as JSON
+```
+
+Event types received on the socket:
+
+| type | Fired when |
+|---|---|
+| `run_start` | Execution begins |
+| `node_start` | An agent node starts processing |
+| `tool_call` | An agent called a tool; includes the observation |
+| `usage` | After each LLM call; includes cumulative token + cost totals |
+| `node_end` | A node finished; includes its final output |
+| `agent_message` | An inter-agent message was recorded |
+| `guardrail` | Token ceiling reached or tool blocked |
+| `run_end` | Run finished; includes final output and totals |
+
+Multiple browser tabs can connect simultaneously — all receive the same events.
 
 ---
 
 ## What's implemented
 
-| Requirement | Where |
+| Feature | Where |
 |---|---|
 | Agent CRUD (name, role, prompt, model, tools, interaction rules, guardrails) | `server/app/api/agents.py`, UI **Agents** tab |
 | Visual workflow builder with conditions + feedback loops | `web/src/pages/BuilderPage.tsx` + `server/app/runtime/compiler.py` |
@@ -109,10 +190,10 @@ The seam between builder and runtime is `compiler.compile_graph(graph_spec → S
 1. The builder serializes the canvas to a `graph_spec` (nodes = agents, edges = routing).
 2. `compile_graph` turns it into a LangGraph `StateGraph` — conditional edges become
    routers, loop-back edges become cycles.
-3. Each node calls its agent's model, runs a bounded real-tool loop, enforces
-   guardrails (tool allowlist, token ceiling), and publishes its output onto the bus.
-4. The executor persists the run, every message, and per-call token/cost usage;
-   the WebSocket hub streams events live to the Monitor.
+3. Each node calls its LLM, runs a bounded real-tool loop, enforces guardrails
+   (tool allowlist, token ceiling), and publishes its output onto the bus.
+4. The executor persists the run, every message, and per-call token/cost usage.
+5. The WebSocket hub streams every bus event live to the Monitor tab.
 
 ---
 
@@ -127,6 +208,9 @@ automatically via `/api/templates`.
 
 **Add a tool** — add a function and registry entry in `server/app/runtime/tools.py`;
 it becomes selectable in the agent config UI.
+
+**Add an LLM provider** — add an `elif self._provider == "<name>"` branch in
+`server/app/runtime/llm.py` using any LangChain chat model.
 
 ---
 
@@ -147,4 +231,4 @@ The `docs/` directory contains:
 |---|---|
 | `docs/DOCUMENTATION.md` | Full platform documentation with architecture, tab-by-tab UI walkthrough, data model, and extension guide |
 | `docs/screenshots/` | UI screenshots for all three tabs (Agents, Builder, Monitor) and Telegram bot conversations |
-| `docs/screenshots/demo/` | Step-by-step screenshots of the 3-agent Research → Write → Review demo run |
+| `docs/screenshots/demo/` | Step-by-step screenshots of the 3-agent Research → Write → Review live demo run |
