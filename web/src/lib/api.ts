@@ -9,6 +9,10 @@ export interface Agent {
   system_prompt: string;
   model: string;
   tools: string[];
+  channels: string[];
+  schedule: Record<string, any>;
+  memory_config: Record<string, any>;
+  skills: string[];
   interaction_rules: Record<string, any>;
   guardrails: Record<string, any>;
 }

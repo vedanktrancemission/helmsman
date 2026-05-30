@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { api, Agent } from "../lib/api";
 
+const CHANNELS = ["telegram", "whatsapp"];
+
 const EMPTY: Partial<Agent> = {
   name: "",
   role: "",
   system_prompt: "",
   model: "fake",
   tools: [],
+  channels: [],
+  schedule: {},
+  memory_config: { type: "none" },
+  skills: [],
   guardrails: { max_tool_steps: 3 },
 };
 
@@ -36,6 +42,11 @@ export default function AgentsPage() {
     setDraft({ ...draft, tools: cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t] });
   };
 
+  const toggleChannel = (c: string) => {
+    const cur = draft.channels || [];
+    setDraft({ ...draft, channels: cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c] });
+  };
+
   return (
     <div className="row">
       <div className="card" style={{ flex: 1 }}>
@@ -49,11 +60,9 @@ export default function AgentsPage() {
             </div>
             <div className="muted">{a.role}</div>
             <div style={{ marginTop: 6 }}>
-              {(a.tools || []).map((t) => (
-                <span className="tag" key={t}>
-                  {t}
-                </span>
-              ))}
+              {(a.tools || []).map((t) => <span className="tag" key={t}>{t}</span>)}
+              {(a.channels || []).map((c) => <span className="tag" key={c} style={{ background: "var(--accent)" }}>{c}</span>)}
+              {(a.skills || []).map((s) => <span className="tag" key={s} style={{ opacity: 0.7 }}>{s}</span>)}
             </div>
             <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
               <button onClick={() => { setDraft(a); setEditingId(a.id); }}>Edit</button>
@@ -104,6 +113,49 @@ export default function AgentsPage() {
               <strong>{t.name}</strong> <span className="muted">— {t.description.slice(0, 60)}</span>
             </label>
           ))}
+        </div>
+        <div className="field">
+          <div className="label">Channels</div>
+          {CHANNELS.map((c) => (
+            <label key={c} style={{ display: "block", fontSize: 13, marginBottom: 3 }}>
+              <input
+                type="checkbox"
+                style={{ width: "auto", marginRight: 6 }}
+                checked={(draft.channels || []).includes(c)}
+                onChange={() => toggleChannel(c)}
+              />
+              {c}
+            </label>
+          ))}
+        </div>
+        <div className="field">
+          <div className="label">Schedule (cron)</div>
+          <input
+            placeholder="e.g. 0 9 * * * (daily at 9am)"
+            value={(draft.schedule as any)?.cron || ""}
+            onChange={(e) => setDraft({ ...draft, schedule: { cron: e.target.value } })}
+          />
+        </div>
+        <div className="field">
+          <div className="label">Memory</div>
+          <select
+            value={(draft.memory_config as any)?.type || "none"}
+            onChange={(e) => setDraft({ ...draft, memory_config: { type: e.target.value } })}
+          >
+            <option value="none">None</option>
+            <option value="conversation">Conversation (last N turns)</option>
+            <option value="semantic">Semantic (vector search)</option>
+          </select>
+        </div>
+        <div className="field">
+          <div className="label">Skills (comma-separated)</div>
+          <input
+            placeholder="e.g. summarisation, translation"
+            value={(draft.skills || []).join(", ")}
+            onChange={(e) =>
+              setDraft({ ...draft, skills: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })
+            }
+          />
         </div>
         <div className="field">
           <div className="label">Guardrail: max tool steps</div>

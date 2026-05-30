@@ -30,6 +30,10 @@ class Agent(Base):
     model: Mapped[str] = mapped_column(String, default="fake")
 
     tools: Mapped[list] = mapped_column(JSON, default=list)
+    channels: Mapped[list] = mapped_column(JSON, default=list)
+    schedule: Mapped[dict] = mapped_column(JSON, default=dict)
+    memory_config: Mapped[dict] = mapped_column(JSON, default=dict)
+    skills: Mapped[list] = mapped_column(JSON, default=list)
     interaction_rules: Mapped[dict] = mapped_column(JSON, default=dict)
     guardrails: Mapped[dict] = mapped_column(JSON, default=dict)
 

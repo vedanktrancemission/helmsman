@@ -13,6 +13,10 @@ class AgentBase(BaseModel):
     system_prompt: str = ""
     model: str = "fake"
     tools: list[str] = Field(default_factory=list)
+    channels: list[str] = Field(default_factory=list)
+    schedule: dict[str, Any] = Field(default_factory=dict)
+    memory_config: dict[str, Any] = Field(default_factory=dict)
+    skills: list[str] = Field(default_factory=list)
     interaction_rules: dict[str, Any] = Field(default_factory=dict)
     guardrails: dict[str, Any] = Field(default_factory=dict)
 
@@ -27,6 +31,10 @@ class AgentUpdate(BaseModel):
     system_prompt: str | None = None
     model: str | None = None
     tools: list[str] | None = None
+    channels: list[str] | None = None
+    schedule: dict[str, Any] | None = None
+    memory_config: dict[str, Any] | None = None
+    skills: list[str] | None = None
     interaction_rules: dict[str, Any] | None = None
     guardrails: dict[str, Any] | None = None
 

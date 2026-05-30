@@ -160,6 +160,22 @@ Multiple browser tabs can connect simultaneously — all receive the same events
 
 ---
 
+## Why LangGraph?
+
+The challenge required integrating one of: openclaw.ai, LangGraph, CrewAI, AutoGen, or a custom runtime.
+
+**LangGraph was chosen for three reasons:**
+
+1. **Cycles and conditional edges as first-class primitives.** The core requirement — feedback loops between agents (e.g. Reviewer → Writer → Reviewer) — maps directly onto LangGraph's `StateGraph` with `add_conditional_edges`. CrewAI and AutoGen model agent interaction as sequential pipelines or conversation threads, not arbitrary directed graphs with cycles. Implementing a feedback loop in those frameworks requires workarounds; in LangGraph it is the natural model.
+
+2. **Explicit, inspectable state.** Every node receives and returns a typed `GraphState` dict. This makes it straightforward to track shared context (conversation history, per-node outputs, step count) across agents, stream it onto an event bus, and persist it to the database. Frameworks that hide state inside the framework internals make this kind of transparency harder.
+
+3. **Clean separation from the rest of the stack.** LangGraph compiles a `graph_spec` dict into a runnable app via a single function (`compile_graph`). The rest of the platform — the REST API, the WebSocket hub, the Telegram channel — never imports LangGraph directly. Swapping the runtime in the future requires changing only `compiler.py` and `nodes.py`.
+
+**Tradeoffs:** LangGraph is lower-level than CrewAI or AutoGen — there is no built-in agent persona management, tool registry, or memory store. Those concerns are handled explicitly by Helmsman's own layers (`nodes.py`, `tools.py`, `db/`), which keeps the architecture transparent but requires more code than a higher-level framework would.
+
+---
+
 ## Architecture
 
 ```
