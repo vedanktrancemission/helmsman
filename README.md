@@ -54,6 +54,14 @@ Set these three fields in `.env`:
 
 ---
 
+## Demo
+
+![Helmsman end-to-end demo](docs/screenshots/demo.gif)
+
+*Creating an agent → loading the Research→Write→Review workflow → running a task → live Monitor output*
+
+---
+
 ## Try it in 60 seconds
 1. Open the UI → **Builder** tab → click **+ Research → Write → Review** to instantiate the template.
 2. Type a task (e.g. *"Write a launch tweet for feature X"*) and hit **Run ▶**.

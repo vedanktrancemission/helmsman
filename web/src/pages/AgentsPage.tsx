@@ -94,6 +94,8 @@ export default function AgentsPage() {
           <div className="label">Model</div>
           <select value={draft.model || "fake"} onChange={(e) => setDraft({ ...draft, model: e.target.value })}>
             <option value="fake">fake (offline)</option>
+            <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (Groq)</option>
+            <option value="llama3-70b-8192">llama3-70b-8192 (Groq)</option>
             <option value="gpt-4o-mini">gpt-4o-mini</option>
             <option value="gpt-4o">gpt-4o</option>
             <option value="claude-3-5-sonnet-latest">claude-3-5-sonnet</option>
