@@ -56,9 +56,15 @@ Set these three fields in `.env`:
 
 ## Demo
 
+### UI — Agent creation + multi-agent workflow run
 ![Helmsman end-to-end demo](docs/screenshots/demo.gif)
 
 *Creating an agent → loading the Research→Write→Review workflow → running a task → live Monitor output*
+
+### Telegram — conversational agent over messaging
+![Telegram channel demo](docs/screenshots/telegram_demo.gif)
+
+*User sends a message → 3-agent workflow runs → reply streamed back → Monitor shows live run history*
 
 ---
 
