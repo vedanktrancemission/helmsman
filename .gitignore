@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.db
+.pytest_cache/
+.env
+
+# Node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+vite.config.ts.timestamp-*
+
+# OS
+.DS_Store
