@@ -12,7 +12,6 @@ import ReactFlow, {
 } from "reactflow";
 import { api, GraphSpec, Template, Workflow } from "../lib/api";
 
-// ---- graph_spec <-> reactflow conversions ------------------------------
 function specToFlow(spec: GraphSpec): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = (spec.nodes || []).map((n, i) => ({
     id: n.name,
@@ -55,9 +54,6 @@ function flowToSpec(nodes: Node[], edges: Edge[], base: GraphSpec): GraphSpec {
     position: n.position,
   }));
 
-  // Seed END branches from the original spec — they are never rendered as
-  // React Flow edges (there is no END node on the canvas) so they would be
-  // silently dropped on every save without this pre-population.
   const byCondSource: Record<string, any> = {};
   (base.edges || []).forEach((e) => {
     if (e.conditional && e.branches) {

@@ -1,4 +1,3 @@
-// Typed API client. Mirrors server/app/schemas.py.
 const API_BASE: string =
   (import.meta as any).env?.VITE_API_BASE || "http://localhost:8000";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
@@ -77,7 +76,6 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  // agents
   listAgents: () => req<Agent[]>("/api/agents"),
   tools: () => req<{ name: string; description: string }[]>("/api/agents/tools"),
   createAgent: (a: Partial<Agent>) =>
@@ -86,7 +84,6 @@ export const api = {
     req<Agent>(`/api/agents/${id}`, { method: "PATCH", body: JSON.stringify(a) }),
   deleteAgent: (id: string) => req<void>(`/api/agents/${id}`, { method: "DELETE" }),
 
-  // workflows
   listWorkflows: () => req<Workflow[]>("/api/workflows"),
   updateWorkflow: (id: string, w: Partial<Workflow>) =>
     req<Workflow>(`/api/workflows/${id}`, { method: "PATCH", body: JSON.stringify(w) }),
@@ -101,7 +98,6 @@ export const api = {
       body: JSON.stringify({ input, thread_id }),
     }),
 
-  // runs + templates
   listRuns: () => req<RunDetail[]>("/api/runs"),
   getRun: (id: string) => req<RunDetail>(`/api/runs/${id}`),
   templates: () => req<Template[]>("/api/templates"),
