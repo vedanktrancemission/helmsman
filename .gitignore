@@ -16,3 +16,7 @@ vite.config.ts.timestamp-*
 
 # OS
 .DS_Store
+
+# Generated docs (Word files not tracked in git)
+docs/*.docx
+docs/~$*

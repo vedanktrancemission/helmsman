@@ -136,3 +136,15 @@ cd server && PYTHONPATH=. pytest -q
 ```
 Covers agent CRUD, workflow execution (conditional edge + feedback loop + persistence),
 message delivery (inbound channel → runtime → persisted history), and bus event streaming.
+
+---
+
+## Documentation
+
+The `docs/` directory contains:
+
+| File | Contents |
+|---|---|
+| `docs/DOCUMENTATION.md` | Full platform documentation with architecture, tab-by-tab UI walkthrough, data model, and extension guide |
+| `docs/screenshots/` | UI screenshots for all three tabs (Agents, Builder, Monitor) and Telegram bot conversations |
+| `docs/screenshots/demo/` | Step-by-step screenshots of the 3-agent Research → Write → Review demo run |

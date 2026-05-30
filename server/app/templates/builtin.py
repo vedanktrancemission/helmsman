@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-def _agent(name, role, prompt, tools=None, model="fake"):
+def _agent(name, role, prompt, tools=None, model=None):
     return {
         "name": name,
         "role": role,

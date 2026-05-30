@@ -54,8 +54,28 @@ function flowToSpec(nodes: Node[], edges: Edge[], base: GraphSpec): GraphSpec {
     name: n.id,
     position: n.position,
   }));
-  // Group conditional edges by source; keep plain edges as-is.
+
+  // Seed END branches from the original spec — they are never rendered as
+  // React Flow edges (there is no END node on the canvas) so they would be
+  // silently dropped on every save without this pre-population.
   const byCondSource: Record<string, any> = {};
+  (base.edges || []).forEach((e) => {
+    if (e.conditional && e.branches) {
+      const endBranches: Record<string, string> = {};
+      Object.entries(e.branches).forEach(([key, target]) => {
+        if (target === "END" || target === "__end__") endBranches[key] = target;
+      });
+      if (Object.keys(endBranches).length > 0) {
+        byCondSource[e.source] = {
+          source: e.source,
+          conditional: true,
+          condition: e.condition,
+          branches: { ...endBranches },
+        };
+      }
+    }
+  });
+
   const specEdges: any[] = [];
   edges.forEach((e) => {
     if (e.data?.conditional) {
