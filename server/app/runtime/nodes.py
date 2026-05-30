@@ -1,3 +1,4 @@
+"""Agent node factory: LLM + tool loop + guardrails + event emission."""
 from __future__ import annotations
 
 import json
@@ -13,6 +14,7 @@ _CALL_RE = re.compile(r"CALL\s+(\w+)\s*(\{.*\})?", re.DOTALL)
 
 @dataclass
 class ExecContext:
+    """Per-run context shared across all agent nodes."""
     run_id: str
     cost: "object"
     emit: Callable[[dict], Awaitable[None]]
@@ -61,6 +63,7 @@ def _build_messages(state: dict, agent: dict) -> list[dict]:
 
 
 def make_agent_node(agent: dict, ctx: ExecContext, node_name: str):
+    """Return an async LangGraph node function for the given agent config."""
     guardrails = agent.get("guardrails") or {}
     max_tool_steps = int(guardrails.get("max_tool_steps", 4))
     allowed_tools = set(agent.get("tools") or [])

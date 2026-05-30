@@ -1,3 +1,4 @@
+"""WebSocket endpoint that streams live run events to the browser."""
 from __future__ import annotations
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect

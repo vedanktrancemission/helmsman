@@ -1,3 +1,4 @@
+"""Executes a graph_spec and persists the run, messages, and token usage."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -36,6 +37,7 @@ async def execute_spec(
     agent_lookup: dict[str, dict] | None = None,
     token_ceiling: int | None = None,
 ) -> dict:
+    """Execute a graph_spec and return final output, messages, and usage."""
     settings = get_settings()
     bus = get_bus()
     cost = CostTracker(token_ceiling=token_ceiling or settings.default_run_token_ceiling)
@@ -82,6 +84,7 @@ async def run_persisted(
     workflow_id: str | None = None,
     inbound_channel: str | None = None,
 ) -> Run:
+    """Create a Run record, execute the spec, and persist all results."""
     run = Run(workflow_id=workflow_id, thread_id=thread_id, status="running", input=input_text)
     db.add(run)
     db.commit()
@@ -116,6 +119,7 @@ async def run_persisted(
 async def run_workflow(
     db: Session, workflow: Workflow, input_text: str, thread_id: str = "default"
 ) -> Run:
+    """Execute a saved Workflow and persist all results."""
     return await run_persisted(
         db, workflow.graph_spec, input_text, thread_id, workflow_id=workflow.id
     )

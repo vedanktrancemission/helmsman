@@ -1,3 +1,4 @@
+"""Built-in workflow template definitions."""
 from __future__ import annotations
 
 

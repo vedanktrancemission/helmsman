@@ -1,3 +1,4 @@
+"""FastAPI app: API routers, CORS, DB init, and Telegram background task."""
 from __future__ import annotations
 
 import asyncio

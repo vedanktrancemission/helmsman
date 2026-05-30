@@ -1,3 +1,4 @@
+"""Routes inbound channel messages to the runtime and returns the reply."""
 from __future__ import annotations
 
 from app.config import get_settings

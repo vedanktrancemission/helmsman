@@ -1,3 +1,4 @@
+"""Async event bus with in-memory and Redis Stream backends."""
 from __future__ import annotations
 
 import asyncio
@@ -8,6 +9,7 @@ from app.config import get_settings
 
 
 class MemoryBus:
+    """In-process asyncio pub/sub bus."""
     def __init__(self) -> None:
         self._subscribers: set[asyncio.Queue] = set()
 
@@ -26,6 +28,7 @@ class MemoryBus:
 
 
 class RedisStreamBus:
+    """Durable event bus backed by Redis Streams."""
     STREAM = "helmsman:events"
 
     def __init__(self, url: str) -> None:
@@ -50,6 +53,7 @@ _bus: MemoryBus | RedisStreamBus | None = None
 
 
 def get_bus() -> MemoryBus | RedisStreamBus:
+    """Return the singleton bus, creating it on first call."""
     global _bus
     if _bus is None:
         settings = get_settings()

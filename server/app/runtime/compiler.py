@@ -1,3 +1,4 @@
+"""Compiles a graph_spec dict into a runnable LangGraph StateGraph."""
 from __future__ import annotations
 
 import operator
@@ -19,6 +20,7 @@ def _merge_dict(a: dict, b: dict) -> dict:
 
 
 class GraphState(TypedDict, total=False):
+    """Shared mutable state passed between all nodes in a workflow run."""
     input: str
     history: Annotated[list, operator.add]
     outputs: Annotated[dict, _merge_dict]
@@ -27,7 +29,7 @@ class GraphState(TypedDict, total=False):
 
 
 class WorkflowSpecError(ValueError):
-    pass
+    """Raised when a graph_spec is structurally invalid."""
 
 
 def _resolve_agent(node: dict, agent_lookup: dict[str, dict]) -> dict:
@@ -68,6 +70,7 @@ def _make_router(condition: str, source_name: str, branch_keys: set[str]) -> Cal
 
 
 def validate_spec(spec: dict) -> None:
+    """Raise WorkflowSpecError if the spec is structurally invalid."""
     if not spec.get("nodes"):
         raise WorkflowSpecError("graph_spec has no nodes")
     names = [n["name"] for n in spec["nodes"]]
@@ -88,6 +91,7 @@ def validate_spec(spec: dict) -> None:
 
 
 def compile_graph(spec: dict, ctx: ExecContext, agent_lookup: dict[str, dict] | None = None):
+    """Compile a graph_spec into a runnable LangGraph app."""
     agent_lookup = agent_lookup or {}
     validate_spec(spec)
 

@@ -1,3 +1,4 @@
+"""Workflow CRUD, template instantiation, and run trigger."""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException

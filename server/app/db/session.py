@@ -1,3 +1,4 @@
+"""Database engine, session factory, and table initialisation."""
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -18,6 +19,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, futu
 
 
 def init_db() -> None:
+    """Create all tables (idempotent)."""
     from app.db.models import Base  # noqa: WPS433
 
     Base.metadata.create_all(bind=engine)

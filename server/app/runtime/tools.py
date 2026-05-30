@@ -1,3 +1,4 @@
+"""Tool registry and execution."""
 from __future__ import annotations
 
 import ast
@@ -11,6 +12,7 @@ import httpx
 
 @dataclass
 class Tool:
+    """A registered tool with name, description, and callable."""
     name: str
     description: str
     fn: Callable[..., str]

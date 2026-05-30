@@ -1,3 +1,4 @@
+"""Pydantic request/response schemas for the REST API."""
 from __future__ import annotations
 
 from datetime import datetime

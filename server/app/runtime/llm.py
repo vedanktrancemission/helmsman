@@ -1,3 +1,4 @@
+"""LLM abstraction with FakeLLM (offline) and LangChain backends."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,6 +26,8 @@ class BaseLLM:
 
 
 class FakeLLM(BaseLLM):
+    """Deterministic offline model for local dev and tests."""
+
     model = "fake"
 
     def __init__(self) -> None:
@@ -57,6 +60,8 @@ class FakeLLM(BaseLLM):
 
 
 class LangChainLLM(BaseLLM):
+    """Real model via LangChain; provider SDK is imported lazily."""
+
     def __init__(self, model: str, provider: str, api_key: str) -> None:
         self.model = model
         self._provider = provider
@@ -105,6 +110,7 @@ class LangChainLLM(BaseLLM):
 
 
 def get_llm(model: str | None = None) -> BaseLLM:
+    """Return the configured LLM, falling back to FakeLLM when no API key is set."""
     settings = get_settings()
     model = model or settings.default_model
     if settings.llm_provider == "fake" or model == "fake" or not settings.llm_api_key:

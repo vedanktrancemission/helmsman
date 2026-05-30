@@ -1,3 +1,4 @@
+"""Telegram long-polling channel adapter."""
 from __future__ import annotations
 
 import asyncio

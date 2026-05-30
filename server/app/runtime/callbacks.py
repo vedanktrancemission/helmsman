@@ -1,3 +1,4 @@
+"""Token and cost accounting for a single run."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -27,6 +28,8 @@ class UsageRecord:
 
 @dataclass
 class CostTracker:
+    """Accumulates token usage and enforces the per-run token ceiling."""
+
     token_ceiling: int = 200_000
     records: list[UsageRecord] = field(default_factory=list)
     total_tokens: int = 0
