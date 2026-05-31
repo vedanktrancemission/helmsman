@@ -29,6 +29,13 @@ def _default_spec() -> dict:
     }
 
 
+def _extract_user_message(raw_input: str) -> str:
+    """Strip any previously injected context prefix, returning only the original user message."""
+    if raw_input.startswith("Conversation so far:") and "\n\nUser: " in raw_input:
+        return raw_input.split("\n\nUser: ", 1)[-1]
+    return raw_input
+
+
 def _conversation_context(db: Session, thread_id: str) -> str:
     """Return the last N turns for this thread as a context prefix."""
     past = (
@@ -42,13 +49,14 @@ def _conversation_context(db: Session, thread_id: str) -> str:
         return ""
     turns = []
     for run in reversed(past):
-        turns.append(f"User: {run.input}")
+        user_msg = _extract_user_message(run.input)
+        turns.append(f"User: {user_msg[:500]}")
         agent_msgs = [
             m for m in run.messages
             if m.role == "agent" and m.recipient == "workflow"
         ]
         if agent_msgs:
-            turns.append(f"Assistant: {agent_msgs[-1].content}")
+            turns.append(f"Assistant: {agent_msgs[-1].content[:500]}")
     return "Conversation so far:\n" + "\n".join(turns) + "\n\nUser: "
 
 
@@ -72,6 +80,8 @@ async def handle_inbound(text: str, conversation_id: str, channel: str = "telegr
             db, spec, input_with_context, thread_id=conversation_id,
             workflow_id=workflow_id, inbound_channel=channel,
         )
-        return run.output or "(no output)"
+        if run.status == "failed":
+            return "Sorry, I ran into an issue processing your message. Please try again."
+        return run.output or "I processed your message but had nothing to say. Please try again."
     finally:
         db.close()
