@@ -24,6 +24,19 @@ class TelegramChannel(Channel):
                 json={"chat_id": conversation_id, "text": text},
             )
 
+    async def _typing_loop(self, conversation_id: str, stop_event: asyncio.Event) -> None:
+        """Send 'typing' indicator every 4 seconds until stop_event is set."""
+        async with httpx.AsyncClient(timeout=10) as client:
+            while not stop_event.is_set():
+                try:
+                    await client.post(
+                        f"{self._base}/sendChatAction",
+                        json={"chat_id": conversation_id, "action": "typing"},
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
+                await asyncio.sleep(4)
+
     async def start(self, on_message: OnMessage) -> None:
         self._running = True
         async with httpx.AsyncClient(timeout=70) as client:
@@ -46,12 +59,19 @@ class TelegramChannel(Channel):
                     if not text or "id" not in chat:
                         continue
                     inbound = InboundMessage(conversation_id=str(chat["id"]), text=text)
+                    stop_typing = asyncio.Event()
+                    typing_task = asyncio.create_task(
+                        self._typing_loop(inbound.conversation_id, stop_typing)
+                    )
                     try:
                         reply = await on_message(inbound)
                         if reply:
                             await self.send(inbound.conversation_id, reply)
                     except Exception as exc:  # noqa: BLE001
                         await self.send(inbound.conversation_id, f"⚠️ error: {exc}")
+                    finally:
+                        stop_typing.set()
+                        typing_task.cancel()
 
     def stop(self) -> None:
         self._running = False
