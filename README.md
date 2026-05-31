@@ -38,6 +38,7 @@ Set these three fields in `.env`:
 | Provider | `LLM_PROVIDER` | `DEFAULT_MODEL` example | Notes |
 |---|---|---|---|
 | Fake (offline) | `fake` | `fake` | Default, no key needed |
+| OpenRouter (free) | `openrouter` | `openai/gpt-oss-20b:free` | Key at openrouter.ai — many free models with `:free` suffix |
 | Groq (free tier) | `groq` | `llama-3.1-8b-instant` | Key at console.groq.com |
 | OpenAI | `openai` | `gpt-4o-mini` | Key at platform.openai.com |
 | Anthropic | `anthropic` | `claude-haiku-3-5-20251001` | Key at console.anthropic.com |

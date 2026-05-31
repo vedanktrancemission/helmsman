@@ -3,6 +3,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
+
 from app.config import get_settings
 
 
@@ -72,20 +76,21 @@ class LangChainLLM(BaseLLM):
         if self._client is not None:
             return
         if self._provider == "openai":
-            from langchain_openai import ChatOpenAI
-
             self._client = ChatOpenAI(model=self.model, api_key=self._api_key, temperature=0.3)
         elif self._provider == "anthropic":
-            from langchain_anthropic import ChatAnthropic
-
             self._client = ChatAnthropic(model=self.model, api_key=self._api_key, temperature=0.3)
         elif self._provider == "groq":
-            from langchain_openai import ChatOpenAI
-
             self._client = ChatOpenAI(
                 model=self.model,
                 api_key=self._api_key,
                 base_url="https://api.groq.com/openai/v1",
+                temperature=0.3,
+            )
+        elif self._provider == "openrouter":
+            self._client = ChatOpenAI(
+                model=self.model,
+                api_key=self._api_key,
+                base_url="https://openrouter.ai/api/v1",
                 temperature=0.3,
             )
         else:
@@ -93,8 +98,6 @@ class LangChainLLM(BaseLLM):
 
     async def ainvoke(self, system: str, messages: list[dict]) -> LLMResult:
         self._ensure_client()
-        from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-
         lc_msgs = [SystemMessage(content=system)]
         for m in messages:
             if m.get("role") == "assistant":
