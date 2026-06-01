@@ -95,6 +95,11 @@ export const api = {
   deleteAgent: (id: string) => req<void>(`/api/agents/${id}`, { method: "DELETE" }),
 
   listWorkflows: () => req<Workflow[]>("/api/workflows"),
+  createWorkflow: (name: string) =>
+    req<Workflow>("/api/workflows", {
+      method: "POST",
+      body: JSON.stringify({ name, graph_spec: { entry: "", nodes: [], edges: [] } }),
+    }),
   updateWorkflow: (id: string, w: Partial<Workflow>) =>
     req<Workflow>(`/api/workflows/${id}`, { method: "PATCH", body: JSON.stringify(w) }),
   deleteWorkflow: (id: string) => req<void>(`/api/workflows/${id}`, { method: "DELETE" }),

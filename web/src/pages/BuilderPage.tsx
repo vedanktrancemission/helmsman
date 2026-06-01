@@ -10,7 +10,7 @@ import ReactFlow, {
   useNodesState,
   MarkerType,
 } from "reactflow";
-import { api, GraphSpec, Template, Workflow } from "../lib/api";
+import { api, Agent, GraphSpec, Template, Workflow } from "../lib/api";
 
 function specToFlow(spec: GraphSpec): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = (spec.nodes || []).map((n, i) => ({
@@ -98,16 +98,20 @@ function flowToSpec(nodes: Node[], edges: Edge[], base: GraphSpec): GraphSpec {
 export default function BuilderPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [current, setCurrent] = useState<Workflow | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [input, setInput] = useState("Write a launch tweet for our new feature");
   const [output, setOutput] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [showAddNode, setShowAddNode] = useState(false);
+  const [selectedAgentId, setSelectedAgentId] = useState("");
 
   useEffect(() => {
     api.templates().then(setTemplates);
     api.listWorkflows().then(setWorkflows);
+    api.listAgents().then((a) => { setAgents(a); if (a.length > 0) setSelectedAgentId(a[0].id); });
   }, []);
 
   const loadWorkflow = (wf: Workflow) => {
@@ -128,6 +132,31 @@ export default function BuilderPage() {
     (c: Connection) => setEdges((eds) => addEdge({ ...c, markerEnd: { type: MarkerType.ArrowClosed } }, eds)),
     [setEdges]
   );
+
+  const newWorkflow = async () => {
+    const name = window.prompt("Workflow name:", "My Workflow");
+    if (!name) return;
+    const wf = await api.createWorkflow(name);
+    setWorkflows(await api.listWorkflows());
+    loadWorkflow(wf);
+  };
+
+  const addNode = () => {
+    const agent = agents.find((a) => a.id === selectedAgentId);
+    if (!agent) return;
+    const baseName = agent.name;
+    let name = baseName;
+    let i = 2;
+    while (nodes.find((n) => n.id === name)) name = `${baseName}_${i++}`;
+    const newNode: Node = {
+      id: name,
+      position: { x: 80 + nodes.length * 220, y: 140 },
+      data: { label: name, role: agent.role, spec: { name, agent_id: agent.id } },
+      type: "default",
+    };
+    setNodes((ns) => [...ns, newNode]);
+    setShowAddNode(false);
+  };
 
   const save = async () => {
     if (!current) return;
@@ -176,6 +205,7 @@ export default function BuilderPage() {
               <option key={w.id} value={w.id}>{w.name}</option>
             ))}
           </select>
+          <button onClick={newWorkflow}>New Workflow</button>
           <button onClick={save} disabled={!current}>Save</button>
           <button
             onClick={async () => {
@@ -192,7 +222,32 @@ export default function BuilderPage() {
           >
             Delete
           </button>
+          <button onClick={() => setShowAddNode((v) => !v)} disabled={!current}>
+            {showAddNode ? "Cancel" : "+ Add Node"}
+          </button>
         </div>
+
+        {showAddNode && (
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 10 }}>
+            <span className="label" style={{ margin: 0 }}>Agent:</span>
+            {agents.length === 0 ? (
+              <span className="muted">No agents — create one in the Agents tab first</span>
+            ) : (
+              <>
+                <select
+                  value={selectedAgentId}
+                  style={{ width: 220 }}
+                  onChange={(e) => setSelectedAgentId(e.target.value)}
+                >
+                  {agents.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name} ({a.role || "no role"})</option>
+                  ))}
+                </select>
+                <button className="primary" onClick={addNode}>Add to canvas</button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="builder">
