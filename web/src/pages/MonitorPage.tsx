@@ -102,7 +102,7 @@ export default function MonitorPage() {
                 onClick={() => api.getRun(r.id).then(setSelected)}
               >
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <strong>{r.input.slice(0, 50)}</strong>
+                  <strong>{(r.input.startsWith("Conversation so far:") || r.input.startsWith("Relevant past context:") ? r.input.split("\n\nUser: ").pop() || r.input : r.input).slice(0, 50)}</strong>
                   <span className="muted">{r.status}</span>
                 </div>
               </div>

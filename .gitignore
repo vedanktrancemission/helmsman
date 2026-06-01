@@ -7,6 +7,9 @@ venv/
 .pytest_cache/
 .env
 
+# FAISS semantic memory indexes (generated at runtime)
+server/data/
+
 # Node
 node_modules/
 dist/

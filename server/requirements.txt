@@ -13,6 +13,10 @@ langchain-anthropic==0.3.0
 redis==5.2.0
 # Postgres driver (used by docker-compose; SQLite needs no driver)
 psycopg2-binary==2.9.10
+# semantic memory
+faiss-cpu>=1.12.0
+sentence-transformers==3.3.1
+apscheduler==3.10.4
 # tests
 pytest==8.3.4
 pytest-asyncio==0.24.0

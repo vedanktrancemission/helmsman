@@ -177,6 +177,21 @@ export default function BuilderPage() {
             ))}
           </select>
           <button onClick={save} disabled={!current}>Save</button>
+          <button
+            onClick={async () => {
+              if (!current || !window.confirm(`Delete workflow "${current.name}"?`)) return;
+              await api.deleteWorkflow(current.id);
+              setCurrent(null);
+              setNodes([]);
+              setEdges([]);
+              setOutput("");
+              setWorkflows(await api.listWorkflows());
+            }}
+            disabled={!current}
+            style={{ color: "var(--red)", borderColor: "var(--red)" }}
+          >
+            Delete
+          </button>
         </div>
       </div>
 

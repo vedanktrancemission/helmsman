@@ -50,3 +50,6 @@ input, textarea, select {
 .react-flow__node { font-size: 12px; }
 .node-card { background: var(--panel-2); border: 1px solid var(--accent-2); border-radius: 8px; padding: 8px 12px; min-width: 120px; }
 .node-card .role { color: var(--muted); font-size: 11px; }
+@keyframes blink { 0%, 80%, 100% { opacity: 0 } 40% { opacity: 1 } }
+.typing-dots { letter-spacing: 2px; }
+.typing-dots::after { content: '...'; animation: blink 1.4s infinite; }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, Agent } from "../lib/api";
 
-const CHANNELS = ["telegram", "whatsapp"];
+const CHANNELS = ["telegram"];
 
 const EMPTY: Partial<Agent> = {
   name: "",
@@ -21,6 +21,7 @@ export default function AgentsPage() {
   const [tools, setTools] = useState<{ name: string; description: string }[]>([]);
   const [draft, setDraft] = useState<Partial<Agent>>(EMPTY);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [skillsText, setSkillsText] = useState("");
 
   const load = () => api.listAgents().then(setAgents);
   useEffect(() => {
@@ -30,9 +31,12 @@ export default function AgentsPage() {
 
   const save = async () => {
     if (!draft.name) return;
-    if (editingId) await api.updateAgent(editingId, draft);
-    else await api.createAgent(draft);
+    const skills = skillsText.split(",").map((s) => s.trim()).filter(Boolean);
+    const payload = { ...draft, skills };
+    if (editingId) await api.updateAgent(editingId, payload);
+    else await api.createAgent(payload);
     setDraft(EMPTY);
+    setSkillsText("");
     setEditingId(null);
     load();
   };
@@ -65,7 +69,7 @@ export default function AgentsPage() {
               {(a.skills || []).map((s) => <span className="tag" key={s} style={{ opacity: 0.7 }}>{s}</span>)}
             </div>
             <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-              <button onClick={() => { setDraft(a); setEditingId(a.id); }}>Edit</button>
+              <button onClick={() => { setDraft(a); setSkillsText((a.skills || []).join(", ")); setEditingId(a.id); }}>Edit</button>
               <button onClick={async () => { await api.deleteAgent(a.id); load(); }}>Delete</button>
             </div>
           </div>
@@ -94,12 +98,15 @@ export default function AgentsPage() {
           <div className="label">Model</div>
           <select value={draft.model || "fake"} onChange={(e) => setDraft({ ...draft, model: e.target.value })}>
             <option value="fake">fake (offline)</option>
-            <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (Groq)</option>
-            <option value="llama3-70b-8192">llama3-70b-8192 (Groq)</option>
-            <option value="gpt-4o-mini">gpt-4o-mini</option>
-            <option value="gpt-4o">gpt-4o</option>
-            <option value="claude-3-5-sonnet-latest">claude-3-5-sonnet</option>
-            <option value="claude-3-5-haiku-latest">claude-3-5-haiku</option>
+            <option value="google/gemma-4-31b-it:free">google/gemma-4-31b-it:free (OpenRouter)</option>
+            <option value="google/gemma-4-26b-a4b-it:free">google/gemma-4-26b-a4b-it:free (OpenRouter)</option>
+            <option value="moonshotai/kimi-k2.6:free">moonshotai/kimi-k2.6:free (OpenRouter)</option>
+            <option value="nvidia/nemotron-3-super-120b-a12b:free">nvidia/nemotron-3-super-120b-a12b:free (OpenRouter)</option>
+            <option value="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (OpenRouter)</option>
+            <option value="gpt-4o-mini">gpt-4o-mini (OpenAI)</option>
+            <option value="gpt-4o">gpt-4o (OpenAI)</option>
+            <option value="claude-3-5-sonnet-latest">claude-3-5-sonnet (Anthropic)</option>
+            <option value="claude-3-5-haiku-latest">claude-3-5-haiku (Anthropic)</option>
           </select>
         </div>
         <div className="field">
@@ -139,6 +146,14 @@ export default function AgentsPage() {
           />
         </div>
         <div className="field">
+          <div className="label">Schedule: prompt</div>
+          <input
+            placeholder="e.g. Send the daily briefing"
+            value={(draft.schedule as any)?.prompt || ""}
+            onChange={(e) => setDraft({ ...draft, schedule: { ...(draft.schedule || {}), prompt: e.target.value } })}
+          />
+        </div>
+        <div className="field">
           <div className="label">Memory</div>
           <select
             value={(draft.memory_config as any)?.type || "none"}
@@ -150,13 +165,22 @@ export default function AgentsPage() {
           </select>
         </div>
         <div className="field">
+          <div className="label">Interaction rules</div>
+          <textarea
+            rows={2}
+            placeholder="Custom instructions appended to the system prompt (e.g. always reply in bullet points)"
+            value={(draft.interaction_rules as any)?.instructions || ""}
+            onChange={(e) =>
+              setDraft({ ...draft, interaction_rules: { ...(draft.interaction_rules || {}), instructions: e.target.value } })
+            }
+          />
+        </div>
+        <div className="field">
           <div className="label">Skills (comma-separated)</div>
           <input
             placeholder="e.g. summarisation, translation"
-            value={(draft.skills || []).join(", ")}
-            onChange={(e) =>
-              setDraft({ ...draft, skills: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })
-            }
+            value={skillsText}
+            onChange={(e) => setSkillsText(e.target.value)}
           />
         </div>
         <div className="field">
@@ -169,9 +193,33 @@ export default function AgentsPage() {
             }
           />
         </div>
+        <div className="field">
+          <div className="label">Guardrail: max output chars <span className="muted">(0 = unlimited)</span></div>
+          <input
+            type="number"
+            value={(draft.guardrails as any)?.max_output_chars ?? 0}
+            onChange={(e) =>
+              setDraft({ ...draft, guardrails: { ...(draft.guardrails || {}), max_output_chars: +e.target.value } })
+            }
+          />
+        </div>
+        <div className="field">
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              style={{ width: "auto" }}
+              checked={!!(draft.guardrails as any)?.restrict_to_role}
+              onChange={(e) =>
+                setDraft({ ...draft, guardrails: { ...(draft.guardrails || {}), restrict_to_role: e.target.checked } })
+              }
+            />
+            <span>Restrict to role domain</span>
+            <span className="muted">— refuse off-topic queries</span>
+          </label>
+        </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="primary" onClick={save}>{editingId ? "Update" : "Create"}</button>
-          {editingId && <button onClick={() => { setDraft(EMPTY); setEditingId(null); }}>Cancel</button>}
+          {editingId && <button onClick={() => { setDraft(EMPTY); setSkillsText(""); setEditingId(null); }}>Cancel</button>}
         </div>
       </div>
     </div>

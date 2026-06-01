@@ -70,6 +70,12 @@ export interface Template {
   description: string;
 }
 
+export interface ChatResponse {
+  reply: string;
+  thread_id: string;
+  run_id: string;
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
@@ -91,6 +97,7 @@ export const api = {
   listWorkflows: () => req<Workflow[]>("/api/workflows"),
   updateWorkflow: (id: string, w: Partial<Workflow>) =>
     req<Workflow>(`/api/workflows/${id}`, { method: "PATCH", body: JSON.stringify(w) }),
+  deleteWorkflow: (id: string) => req<void>(`/api/workflows/${id}`, { method: "DELETE" }),
   fromTemplate: (template_key: string, name?: string) =>
     req<Workflow>("/api/workflows/from-template", {
       method: "POST",
@@ -100,6 +107,12 @@ export const api = {
     req<RunDetail>(`/api/workflows/${id}/run`, {
       method: "POST",
       body: JSON.stringify({ input, thread_id }),
+    }),
+
+  chat: (agent_id: string, message: string, thread_id = "") =>
+    req<ChatResponse>("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ agent_id, message, thread_id }),
     }),
 
   listRuns: () => req<RunDetail[]>("/api/runs"),

@@ -36,10 +36,22 @@ def _parse_tool_call(text: str) -> tuple[str, dict] | None:
 
 
 def _build_system(agent: dict) -> str:
+    name = agent.get("name", "an agent")
+    role = agent.get("role", "")
     lines = [
-        f"You are {agent.get('name', 'an agent')}, role: {agent.get('role', '')}.",
+        f"You are {name}, role: {role}.",
         agent.get("system_prompt", ""),
     ]
+    skills = agent.get("skills") or []
+    if skills:
+        lines.append(f"Your skills include: {', '.join(skills)}.")
+    guardrails = agent.get("guardrails") or {}
+    if guardrails.get("restrict_to_role") and role:
+        lines.append(
+            f"IMPORTANT: You must ONLY respond to queries directly related to your role as {name} ({role}). "
+            "If the user asks about anything outside this domain, politely decline and redirect them: "
+            f"say you are specialized in {role} topics and cannot help with that request."
+        )
     rules = agent.get("interaction_rules") or {}
     if rules.get("instructions"):
         lines.append(f"Interaction rules: {rules['instructions']}")

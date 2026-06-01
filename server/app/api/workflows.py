@@ -88,3 +88,12 @@ async def trigger_run(workflow_id: str, payload: RunRequest, db: Session = Depen
     if not wf:
         raise HTTPException(404, "workflow not found")
     return await run_workflow(db, wf, payload.input, payload.thread_id)
+
+
+@router.delete("/{workflow_id}", status_code=204)
+def delete_workflow(workflow_id: str, db: Session = Depends(get_db)):
+    wf = db.get(Workflow, workflow_id)
+    if not wf:
+        raise HTTPException(404, "workflow not found")
+    db.delete(wf)
+    db.commit()

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import AgentsPage from "./pages/AgentsPage";
 import BuilderPage from "./pages/BuilderPage";
+import ChatPage from "./pages/ChatPage";
 import MonitorPage from "./pages/MonitorPage";
 
-type Tab = "agents" | "builder" | "monitor";
+type Tab = "agents" | "builder" | "chat" | "monitor";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("builder");
@@ -12,7 +13,7 @@ export default function App() {
       <div className="topbar">
         <span className="brand">⎈ HELMSMAN</span>
         <div className="tabs">
-          {(["agents", "builder", "monitor"] as Tab[]).map((t) => (
+          {(["agents", "builder", "chat", "monitor"] as Tab[]).map((t) => (
             <div
               key={t}
               className={`tab ${tab === t ? "active" : ""}`}
@@ -26,9 +27,10 @@ export default function App() {
           AI Agent Orchestration Platform
         </span>
       </div>
-      <div className="content">
+      <div className="content" style={tab === "chat" ? { padding: 0 } : undefined}>
         {tab === "agents" && <AgentsPage />}
         {tab === "builder" && <BuilderPage />}
+        {tab === "chat" && <ChatPage />}
         {tab === "monitor" && <MonitorPage />}
       </div>
     </div>
