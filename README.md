@@ -23,11 +23,33 @@ whole multi-agent flow works immediately. Add a real key to `.env` to use a live
 
 ### Option B — local dev (no Docker)
 Backend uses SQLite + an in-memory bus automatically.
+
+**With Poetry (recommended):**
 ```bash
-# from the project root
-source .venv/bin/activate   # or: pip install -r server/requirements.txt
-make dev-api                # starts uvicorn on :8000
-make dev-web                # starts Vite on :5173 (separate shell)
+# Install Poetry once
+curl -sSL https://install.python-poetry.org | python3 -
+export PATH="$HOME/.local/bin:$PATH"
+
+# Install dependencies
+cd server
+poetry env use python3.12
+poetry install --no-root
+
+# Start backend
+poetry run uvicorn app.main:app --reload --port 8000
+```
+
+**With pip:**
+```bash
+cd server
+python3.12 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+**Frontend (separate shell):**
+```bash
+cd web && npm install && npm run dev
 ```
 
 ---
