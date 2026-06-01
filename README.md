@@ -115,9 +115,16 @@ GROQ_API_KEY=...                     # console.groq.com — free tier
 
 **Chat with a single agent:**
 1. Open the UI → **Agents** tab → create an agent (name, role, system prompt, model).
-2. Switch to **Chat** tab → select your agent → start typing. Multi-turn memory works out of the box.
+2. Switch to **Chat** tab → select your agent → start typing.
+3. Past conversations appear in the left sidebar — click any to reload it. History persists across page refreshes.
 
-**Run a multi-agent workflow:**
+**Build a custom workflow from scratch:**
+1. Go to **Builder** tab → click **New Workflow** → enter a name.
+2. Click **+ Add Node** → pick an agent from the dropdown → **Add to canvas**.
+3. Repeat for each agent, then drag edges between nodes to connect them.
+4. Hit **Save** then **Run ▶**.
+
+**Run a pre-built workflow:**
 1. Open the UI → **Builder** tab → click **+ Research → Write → Review** to instantiate the template.
 2. Type a task (e.g. *"Write a launch tweet for feature X"*) and hit **Run ▶**.
 3. Switch to **Monitor** to watch inter-agent messages, the run log, and live token/cost.
@@ -157,6 +164,7 @@ Base URL: `http://localhost:8000` — all bodies are JSON.
 | Method | Endpoint | Description |
 |---|---|---|
 | `POST` | `/api/chat` | Send a message to a single agent; returns reply + thread_id for multi-turn |
+| `GET` | `/api/chat/history?thread_id=xxx` | Return ordered user/agent messages for a thread |
 
 Request body: `{ "agent_id": "...", "message": "...", "thread_id": "" }`  
 Omit `thread_id` on the first message — the server generates one and returns it. Pass it back on subsequent messages to continue the conversation.
@@ -220,7 +228,8 @@ Multiple browser tabs can connect simultaneously — all receive the same events
 | Feature | Where |
 |---|---|
 | Agent CRUD (name, role, prompt, model, tools, skills, interaction rules, guardrails) | `server/app/api/agents.py`, UI **Agents** tab |
-| **Chat tab** — messenger-style multi-turn conversation with any agent | `web/src/pages/ChatPage.tsx` + `server/app/api/chat.py` |
+| **Chat tab** — messenger-style multi-turn conversation with any agent; conversation history sidebar with persistence across page reloads | `web/src/pages/ChatPage.tsx` + `server/app/api/chat.py` |
+| **Builder: New Workflow + Add Node** — create blank workflows and add agents as nodes directly on the canvas | `web/src/pages/BuilderPage.tsx` |
 | **FAISS semantic memory** — cross-conversation vector search (all-MiniLM-L6-v2) | `server/app/runtime/memory.py` |
 | **Cron scheduler** — agents fire automatically on a cron schedule (APScheduler) | `server/app/main.py` |
 | **Domain restriction guardrail** — agent refuses off-topic queries | `server/app/runtime/nodes.py` (`restrict_to_role`) |
