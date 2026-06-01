@@ -119,6 +119,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ agent_id, message, thread_id }),
     }),
+  getChatHistory: (thread_id: string) =>
+    req<{ role: string; content: string }[]>(`/api/chat/history?thread_id=${encodeURIComponent(thread_id)}`),
 
   listRuns: () => req<RunDetail[]>("/api/runs"),
   getRun: (id: string) => req<RunDetail>(`/api/runs/${id}`),

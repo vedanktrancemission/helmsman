@@ -28,6 +28,11 @@ class ChatResponse(BaseModel):
     run_id: str
 
 
+class ChatHistoryMessage(BaseModel):
+    role: str
+    content: str
+
+
 def _extract_user_message(raw_input: str) -> str:
     if raw_input.startswith("Conversation so far:") and "\n\nUser: " in raw_input:
         return raw_input.split("\n\nUser: ", 1)[-1]
@@ -127,3 +132,22 @@ async def chat(payload: ChatRequest, db: Session = Depends(get_db)):
         _store_in_memory(agent.id, payload.message, reply)
 
     return ChatResponse(reply=reply, thread_id=thread_id, run_id=run.id)
+
+
+@router.get("/history", response_model=list[ChatHistoryMessage])
+def get_chat_history(thread_id: str, db: Session = Depends(get_db)):
+    """Return ordered user/agent messages for a thread."""
+    runs = (
+        db.query(Run)
+        .filter(Run.thread_id == thread_id, Run.status == "completed")
+        .order_by(Run.started_at.asc())
+        .all()
+    )
+    result = []
+    for run in runs:
+        user_msg = _extract_user_message(run.input)
+        result.append({"role": "user", "content": user_msg})
+        agent_msgs = [m for m in run.messages if m.role == "agent" and m.recipient == "workflow"]
+        if agent_msgs:
+            result.append({"role": "agent", "content": agent_msgs[-1].content})
+    return result

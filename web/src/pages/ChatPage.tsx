@@ -6,6 +6,8 @@ interface Message {
   content: string;
 }
 
+const STORAGE_KEY = (agentId: string) => `helmsman_thread_${agentId}`;
+
 export default function ChatPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -13,12 +15,13 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api.listAgents().then((a) => {
       setAgents(a);
-      if (a.length > 0) setSelectedAgent(a[0]);
+      if (a.length > 0) selectAgent(a[0]);
     });
   }, []);
 
@@ -26,7 +29,33 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
+  const loadHistory = async (_agent: Agent, thread: string) => {
+    if (!thread) return;
+    setLoadingHistory(true);
+    try {
+      const history = await api.getChatHistory(thread);
+      const msgs: Message[] = history.map((m) => ({
+        role: m.role === "user" ? "user" : "agent",
+        content: m.content,
+      }));
+      setMessages(msgs);
+    } catch {
+      setMessages([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const selectAgent = async (agent: Agent) => {
+    setSelectedAgent(agent);
+    const savedThread = localStorage.getItem(STORAGE_KEY(agent.id)) || "";
+    setThreadId(savedThread);
+    setMessages([]);
+    if (savedThread) await loadHistory(agent, savedThread);
+  };
+
   const startNewConversation = () => {
+    if (selectedAgent) localStorage.removeItem(STORAGE_KEY(selectedAgent.id));
     setMessages([]);
     setThreadId("");
   };
@@ -39,7 +68,9 @@ export default function ChatPage() {
     setBusy(true);
     try {
       const res = await api.chat(selectedAgent.id, userMsg, threadId);
-      setThreadId(res.thread_id);
+      const newThread = res.thread_id;
+      setThreadId(newThread);
+      localStorage.setItem(STORAGE_KEY(selectedAgent.id), newThread);
       setMessages((prev) => [...prev, { role: "agent", content: res.reply }]);
     } catch (err: any) {
       setMessages((prev) => [
@@ -68,8 +99,7 @@ export default function ChatPage() {
           style={{ width: 220 }}
           onChange={(e) => {
             const agent = agents.find((a) => a.id === e.target.value) || null;
-            setSelectedAgent(agent);
-            startNewConversation();
+            if (agent) selectAgent(agent);
           }}
         >
           {agents.length === 0 && <option value="">No agents — create one first</option>}
@@ -85,8 +115,13 @@ export default function ChatPage() {
             {selectedAgent.tools.length > 0 && ` · tools: ${selectedAgent.tools.join(", ")}`}
           </span>
         )}
-        <div style={{ marginLeft: "auto" }}>
-          <button onClick={startNewConversation} disabled={messages.length === 0}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+          {threadId && (
+            <span className="muted" style={{ fontSize: 11 }}>
+              {messages.length} messages saved
+            </span>
+          )}
+          <button onClick={startNewConversation} disabled={messages.length === 0 && !threadId}>
             New conversation
           </button>
         </div>
@@ -94,7 +129,13 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
-        {messages.length === 0 && (
+        {loadingHistory && (
+          <div style={{ margin: "auto", color: "var(--muted)", fontSize: 13 }}>
+            Loading conversation history…
+          </div>
+        )}
+
+        {!loadingHistory && messages.length === 0 && (
           <div style={{ margin: "auto", textAlign: "center" }}>
             <div className="muted" style={{ fontSize: 14 }}>
               {selectedAgent
@@ -175,7 +216,7 @@ export default function ChatPage() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={selectedAgent ? `Message ${selectedAgent.name}… (Enter to send, Shift+Enter for newline)` : "Select an agent first"}
-          disabled={!selectedAgent || busy}
+          disabled={!selectedAgent || busy || loadingHistory}
           rows={1}
           style={{
             flex: 1,
@@ -201,7 +242,7 @@ export default function ChatPage() {
         <button
           className="primary"
           onClick={send}
-          disabled={!selectedAgent || !input.trim() || busy}
+          disabled={!selectedAgent || !input.trim() || busy || loadingHistory}
           style={{ height: 38, padding: "0 20px" }}
         >
           Send
