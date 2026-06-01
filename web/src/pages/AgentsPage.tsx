@@ -106,6 +106,9 @@ export default function AgentsPage() {
             <option value="gemini-2.0-flash">gemini-2.0-flash (Gemini)</option>
             <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash (Gemini)</option>
             <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro (Gemini)</option>
+            <option value="mistral-small-latest">mistral-small-latest (Mistral)</option>
+            <option value="mistral-medium-latest">mistral-medium-latest (Mistral)</option>
+            <option value="open-mistral-7b">open-mistral-7b (Mistral)</option>
             <option value="gpt-4o-mini">gpt-4o-mini (OpenAI)</option>
             <option value="gpt-4o">gpt-4o (OpenAI)</option>
             <option value="claude-3-5-sonnet-latest">claude-3-5-sonnet (Anthropic)</option>

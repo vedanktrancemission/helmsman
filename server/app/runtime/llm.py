@@ -94,6 +94,13 @@ class LangChainLLM(BaseLLM):
                 base_url="https://openrouter.ai/api/v1",
                 temperature=0.3,
             )
+        elif self._provider == "mistral":
+            self._client = ChatOpenAI(
+                model=self.model,
+                api_key=self._api_key,
+                base_url="https://api.mistral.ai/v1",
+                temperature=0.3,
+            )
         elif self._provider == "gemini":
             self._client = ChatGoogleGenerativeAI(
                 model=self.model,

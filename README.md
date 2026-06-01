@@ -62,6 +62,7 @@ Set these three fields in `.env`:
 |---|---|---|---|
 | Fake (offline) | `fake` | `fake` | Default, no key needed |
 | Gemini | `gemini` | `gemini-2.0-flash` | Key at aistudio.google.com — generous free tier |
+| Mistral | `mistral` | `mistral-small-latest` | Key at console.mistral.ai — free tier available |
 | OpenRouter (free) | `openrouter` | `google/gemma-4-31b-it:free` | Key at openrouter.ai — use `:free` suffix models; check current availability at `openrouter.ai/models?q=free` |
 | OpenAI | `openai` | `gpt-4o-mini` | Key at platform.openai.com |
 | Anthropic | `anthropic` | `claude-haiku-3-5-20251001` | Key at console.anthropic.com |
