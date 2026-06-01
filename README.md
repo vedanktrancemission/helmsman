@@ -56,16 +56,34 @@ cd web && npm install && npm run dev
 
 ## LLM providers
 
-Set these three fields in `.env`:
+**Multi-provider support** — set a key for each provider you want to use. The provider is
+auto-detected from the model name, so you can use different providers per agent without
+changing any global setting.
 
-| Provider | `LLM_PROVIDER` | `DEFAULT_MODEL` example | Notes |
-|---|---|---|---|
-| Fake (offline) | `fake` | `fake` | Default, no key needed |
-| Gemini | `gemini` | `gemini-2.0-flash` | Key at aistudio.google.com — generous free tier |
-| Mistral | `mistral` | `mistral-small-latest` | Key at console.mistral.ai — free tier available |
-| OpenRouter (free) | `openrouter` | `google/gemma-4-31b-it:free` | Key at openrouter.ai — use `:free` suffix models; check current availability at `openrouter.ai/models?q=free` |
-| OpenAI | `openai` | `gpt-4o-mini` | Key at platform.openai.com |
-| Anthropic | `anthropic` | `claude-haiku-3-5-20251001` | Key at console.anthropic.com |
+```env
+DEFAULT_MODEL=mistral-small-latest   # used by Telegram + agents with no model set
+
+MISTRAL_API_KEY=...                  # console.mistral.ai — free tier
+OPENROUTER_API_KEY=...               # openrouter.ai — free models with :free suffix
+GEMINI_API_KEY=...                   # aistudio.google.com — generous free tier
+OPENAI_API_KEY=...                   # platform.openai.com
+ANTHROPIC_API_KEY=...                # console.anthropic.com
+GROQ_API_KEY=...                     # console.groq.com — free tier
+```
+
+### Auto-detection rules
+
+| Model name pattern | Provider detected |
+|---|---|
+| `gemini-*` | Gemini |
+| `mistral-*`, `open-mistral-*`, `codestral-*` | Mistral |
+| `gpt-*`, `o1-*`, `o3-*` | OpenAI |
+| `claude-*` | Anthropic |
+| `llama*`, `mixtral*` | Groq |
+| anything with `/` (e.g. `google/gemma-4-31b-it:free`) | OpenRouter |
+| `fake` | Offline (no key needed) |
+
+> **Note:** If a model's API key is not set, the system silently falls back to `FakeLLM`.
 
 ---
 
