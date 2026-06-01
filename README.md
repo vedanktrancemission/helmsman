@@ -30,9 +30,9 @@ Backend uses SQLite + an in-memory bus automatically.
 curl -sSL https://install.python-poetry.org | python3 -
 export PATH="$HOME/.local/bin:$PATH"
 
-# Install dependencies
+# Create .venv with Python 3.12, then Poetry picks it up automatically
 cd server
-poetry env use python3.12
+python3.12 -m venv .venv
 poetry install --no-root
 
 # Start backend
