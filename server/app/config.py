@@ -16,9 +16,20 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./helmsman.db"
     bus_backend: str = "memory"
     redis_url: str = "redis://localhost:6379/0"
+
+    # Global fallback provider + key (used when per-provider key is not set)
     llm_provider: str = "fake"
     llm_api_key: str = ""
     default_model: str = "fake"
+
+    # Per-provider API keys — set whichever you use
+    openai_api_key: str = ""
+    anthropic_api_key: str = ""
+    groq_api_key: str = ""
+    openrouter_api_key: str = ""
+    mistral_api_key: str = ""
+    gemini_api_key: str = ""
+
     telegram_bot_token: str = ""
     channel_workflow_id: str = ""
     default_max_tool_steps: int = 4

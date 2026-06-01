@@ -126,10 +126,52 @@ class LangChainLLM(BaseLLM):
         return LLMResult(text=resp.content, prompt_tokens=pt, completion_tokens=ct, model=self.model)
 
 
+def _detect_provider(model: str) -> str:
+    """Detect LLM provider from model name."""
+    if model == "fake":
+        return "fake"
+    if model.startswith("gemini-"):
+        return "gemini"
+    if any(model.startswith(p) for p in ("mistral-", "open-mistral-", "codestral-", "mistral/")):
+        return "mistral"
+    if any(model.startswith(p) for p in ("gpt-", "o1-", "o3-", "o4-")):
+        return "openai"
+    if model.startswith("claude-"):
+        return "anthropic"
+    if model.startswith("llama") or model.startswith("mixtral"):
+        return "groq"
+    if "/" in model:
+        return "openrouter"
+    return ""
+
+
+def _get_api_key(provider: str, settings) -> str:
+    """Return the API key for a given provider, falling back to llm_api_key."""
+    per_provider = {
+        "openai": settings.openai_api_key,
+        "anthropic": settings.anthropic_api_key,
+        "groq": settings.groq_api_key,
+        "openrouter": settings.openrouter_api_key,
+        "mistral": settings.mistral_api_key,
+        "gemini": settings.gemini_api_key,
+    }
+    return per_provider.get(provider, "") or settings.llm_api_key
+
+
 def get_llm(model: str | None = None) -> BaseLLM:
-    """Return the configured LLM, falling back to FakeLLM when no API key is set."""
+    """Detect provider from model name, pick the right API key, return LLM."""
     settings = get_settings()
     model = model or settings.default_model
-    if settings.llm_provider == "fake" or model == "fake" or not settings.llm_api_key:
+
+    if model == "fake":
         return FakeLLM()
-    return LangChainLLM(model=model, provider=settings.llm_provider, api_key=settings.llm_api_key)
+
+    provider = _detect_provider(model) or settings.llm_provider
+    if provider == "fake":
+        return FakeLLM()
+
+    api_key = _get_api_key(provider, settings)
+    if not api_key:
+        return FakeLLM()
+
+    return LangChainLLM(model=model, provider=provider, api_key=api_key)
