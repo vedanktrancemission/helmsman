@@ -10,6 +10,7 @@ langchain-core==0.3.21
 # optional providers (installed lazily / only needed for real LLM runs)
 langchain-openai==0.2.10
 langchain-anthropic==0.3.0
+langchain-google-genai>=2.0,<3.0
 redis==5.2.0
 # Postgres driver (used by docker-compose; SQLite needs no driver)
 psycopg2-binary==2.9.10

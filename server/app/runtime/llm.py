@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 
 from app.config import get_settings
@@ -91,6 +92,12 @@ class LangChainLLM(BaseLLM):
                 model=self.model,
                 api_key=self._api_key,
                 base_url="https://openrouter.ai/api/v1",
+                temperature=0.3,
+            )
+        elif self._provider == "gemini":
+            self._client = ChatGoogleGenerativeAI(
+                model=self.model,
+                google_api_key=self._api_key,
                 temperature=0.3,
             )
         else:

@@ -103,6 +103,9 @@ export default function AgentsPage() {
             <option value="moonshotai/kimi-k2.6:free">moonshotai/kimi-k2.6:free (OpenRouter)</option>
             <option value="nvidia/nemotron-3-super-120b-a12b:free">nvidia/nemotron-3-super-120b-a12b:free (OpenRouter)</option>
             <option value="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (OpenRouter)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (Gemini)</option>
+            <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash (Gemini)</option>
+            <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro (Gemini)</option>
             <option value="gpt-4o-mini">gpt-4o-mini (OpenAI)</option>
             <option value="gpt-4o">gpt-4o (OpenAI)</option>
             <option value="claude-3-5-sonnet-latest">claude-3-5-sonnet (Anthropic)</option>
