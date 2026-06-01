@@ -2,8 +2,9 @@
 
 Create AI agents, configure how they behave, wire them into collaborative
 multi-agent workflows that run on a **real LangGraph runtime**, execute **real
-tools**, talk to each other **asynchronously**, and are reachable by a human over
-**Telegram** — all managed from a web UI, running **fully local** with one command.
+tools**, talk to each other **asynchronously**, chat with them directly through a
+**messenger-style UI**, and reach them over **Telegram** — all managed from a web UI,
+running **fully local** with one command.
 
 ---
 
@@ -38,8 +39,7 @@ Set these three fields in `.env`:
 | Provider | `LLM_PROVIDER` | `DEFAULT_MODEL` example | Notes |
 |---|---|---|---|
 | Fake (offline) | `fake` | `fake` | Default, no key needed |
-| OpenRouter (free) | `openrouter` | `openai/gpt-oss-20b:free` | Key at openrouter.ai — many free models with `:free` suffix |
-| Groq (free tier) | `groq` | `llama-3.1-8b-instant` | Key at console.groq.com |
+| OpenRouter (free) | `openrouter` | `google/gemma-4-31b-it:free` | Key at openrouter.ai — use `:free` suffix models; check current availability at `openrouter.ai/models?q=free` |
 | OpenAI | `openai` | `gpt-4o-mini` | Key at platform.openai.com |
 | Anthropic | `anthropic` | `claude-haiku-3-5-20251001` | Key at console.anthropic.com |
 
@@ -70,6 +70,12 @@ Set these three fields in `.env`:
 ---
 
 ## Try it in 60 seconds
+
+**Chat with a single agent:**
+1. Open the UI → **Agents** tab → create an agent (name, role, system prompt, model).
+2. Switch to **Chat** tab → select your agent → start typing. Multi-turn memory works out of the box.
+
+**Run a multi-agent workflow:**
 1. Open the UI → **Builder** tab → click **+ Research → Write → Review** to instantiate the template.
 2. Type a task (e.g. *"Write a launch tweet for feature X"*) and hit **Run ▶**.
 3. Switch to **Monitor** to watch inter-agent messages, the run log, and live token/cost.
@@ -102,7 +108,16 @@ Base URL: `http://localhost:8000` — all bodies are JSON.
 | `GET` | `/api/workflows` | List all workflows |
 | `GET` | `/api/workflows/{id}` | Get a workflow including full graph_spec |
 | `PATCH` | `/api/workflows/{id}` | Update name, description, or graph_spec |
+| `DELETE` | `/api/workflows/{id}` | Delete a workflow |
 | `POST` | `/api/workflows/{id}/run` | Execute a workflow — blocks until all agents finish |
+
+### Chat
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/chat` | Send a message to a single agent; returns reply + thread_id for multi-turn |
+
+Request body: `{ "agent_id": "...", "message": "...", "thread_id": "" }`  
+Omit `thread_id` on the first message — the server generates one and returns it. Pass it back on subsequent messages to continue the conversation.
 
 ### Runs
 | Method | Endpoint | Description |
@@ -162,13 +177,17 @@ Multiple browser tabs can connect simultaneously — all receive the same events
 
 | Feature | Where |
 |---|---|
-| Agent CRUD (name, role, prompt, model, tools, interaction rules, guardrails) | `server/app/api/agents.py`, UI **Agents** tab |
+| Agent CRUD (name, role, prompt, model, tools, skills, interaction rules, guardrails) | `server/app/api/agents.py`, UI **Agents** tab |
+| **Chat tab** — messenger-style multi-turn conversation with any agent | `web/src/pages/ChatPage.tsx` + `server/app/api/chat.py` |
+| **FAISS semantic memory** — cross-conversation vector search (all-MiniLM-L6-v2) | `server/app/runtime/memory.py` |
+| **Cron scheduler** — agents fire automatically on a cron schedule (APScheduler) | `server/app/main.py` |
+| **Domain restriction guardrail** — agent refuses off-topic queries | `server/app/runtime/nodes.py` (`restrict_to_role`) |
 | Visual workflow builder with conditions + feedback loops | `web/src/pages/BuilderPage.tsx` + `server/app/runtime/compiler.py` |
 | 2 pre-built templates | `server/app/templates/builtin.py` (research-loop, triage-routing) |
 | Real runtime executing agent logic | LangGraph `StateGraph` in `compiler.py` / `nodes.py` |
 | Real tool execution | `server/app/runtime/tools.py` (calculator, http_get, current_time) |
 | Async agent-to-agent communication | `server/app/runtime/bus.py` (in-memory / Redis Streams) |
-| External channel (Telegram) | `server/app/channels/telegram.py` (long polling) |
+| External channel (Telegram) with semantic memory support | `server/app/channels/telegram.py` (long polling) |
 | Persisted, UI-visible message history | `Message`/`Run` tables, **Monitor** tab |
 | Live monitoring: logs, inter-agent messages, token/cost | WebSocket `/ws/events` → **Monitor** tab |
 | Tests for critical paths | `server/tests/` |
@@ -197,12 +216,13 @@ The challenge required integrating one of: openclaw.ai, LangGraph, CrewAI, AutoG
  React + React Flow (web/)                FastAPI (server/app/api)
  ┌───────────────────────┐    REST/WS    ┌──────────────────────────┐
  │ Agents · Builder ·     │◄────────────►│ routers + WebSocket hub   │
- │ Monitor                │              │ orchestrator              │
+ │ Chat · Monitor         │              │ orchestrator · scheduler  │
  └───────────────────────┘              └────────────┬─────────────┘
                                                       │ compiles graph_spec
                                           ┌───────────▼─────────────┐
-            Telegram (long-poll) ───────► │ LangGraph runtime        │
+  Chat API + Telegram (long-poll) ──────► │ LangGraph runtime        │
                                           │ nodes · tools · guardrails│
+                                          │ FAISS semantic memory     │
                                           └─────┬───────────────┬────┘
                                   events/messages│               │ state
                                           ┌──────▼──────┐  ┌─────▼──────┐
@@ -225,6 +245,30 @@ The seam between builder and runtime is `compiler.compile_graph(graph_spec → S
    (tool allowlist, token ceiling), and publishes its output onto the bus.
 4. The executor persists the run, every message, and per-call token/cost usage.
 5. The WebSocket hub streams every bus event live to the Monitor tab.
+
+---
+
+## Agent memory
+
+Each agent has a `memory_config` field with three modes:
+
+| Mode | Behaviour |
+|---|---|
+| `none` | No memory — each conversation starts fresh |
+| `conversation` | Last 6 turns are prepended as context (stored in DB) |
+| `semantic` | FAISS vector index (all-MiniLM-L6-v2, 384-dim) — semantically relevant past messages retrieved cross-conversation |
+
+Semantic memory indexes are stored at `server/data/memory/{agent_id}.faiss` (excluded from git).
+
+## Cron scheduler
+
+Set `schedule.cron` and `schedule.prompt` on any agent to run it automatically:
+
+```json
+{ "cron": "0 9 * * *", "prompt": "Send the daily briefing" }
+```
+
+The scheduler starts on server boot and registers one APScheduler job per agent with a cron expression. Standard 5-field unix cron syntax is supported. To update a schedule, edit the agent and restart the server.
 
 ---
 
