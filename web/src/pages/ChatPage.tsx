@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api, Agent } from "../lib/api";
 
 interface Message {
@@ -227,12 +229,15 @@ export default function ChatPage() {
                 background: m.role === "user" ? "var(--accent)" : "var(--panel-2)",
                 color: m.role === "user" ? "#1a212b" : "var(--text)",
                 border: m.role === "agent" ? "1px solid var(--border)" : "none",
-                whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: 14,
+                whiteSpace: m.role === "user" ? "pre-wrap" : "normal",
+                lineHeight: 1.5, fontSize: 14,
               }}>
                 {m.role === "agent" && (
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>{selectedAgent?.name}</div>
                 )}
-                {m.content}
+                {m.role === "agent"
+                  ? <div className="chat-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown></div>
+                  : m.content}
               </div>
             </div>
           ))}
