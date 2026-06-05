@@ -4,7 +4,8 @@ import os
 import tempfile
 
 os.environ.setdefault("DATABASE_URL", f"sqlite:///{tempfile.mktemp(suffix='.db')}")
-os.environ.setdefault("LLM_PROVIDER", "fake")
+os.environ["LLM_PROVIDER"] = "fake"
+os.environ["DEFAULT_MODEL"] = "fake"
 os.environ.setdefault("BUS_BACKEND", "memory")
 
 import pytest  # noqa: E402
