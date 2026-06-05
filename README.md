@@ -94,6 +94,8 @@ GROQ_API_KEY=...                     # console.groq.com — free tier
 3. Restart the server — it uses long polling, so no public URL or tunnel is needed.
 4. Message your bot; the reply comes from the default Concierge agent (or the workflow
    set via `CHANNEL_WORKFLOW_ID`). The exchange appears in the **Monitor** tab.
+5. Responses are formatted using Telegram HTML — bold, italic, code blocks, and tables
+   are rendered natively in the chat. If formatting fails the message falls back to plain text.
 
 ---
 
@@ -228,7 +230,7 @@ Multiple browser tabs can connect simultaneously — all receive the same events
 | Feature | Where |
 |---|---|
 | Agent CRUD (name, role, prompt, model, tools, skills, interaction rules, guardrails) | `server/app/api/agents.py`, UI **Agents** tab |
-| **Chat tab** — messenger-style multi-turn conversation with any agent; conversation history sidebar with persistence across page reloads | `web/src/pages/ChatPage.tsx` + `server/app/api/chat.py` |
+| **Chat tab** — messenger-style multi-turn conversation with any agent; agent replies rendered as Markdown (tables, bold, code blocks via react-markdown + remark-gfm); conversation history sidebar with persistence across page reloads | `web/src/pages/ChatPage.tsx` + `server/app/api/chat.py` |
 | **Builder: New Workflow + Add Node** — create blank workflows and add agents as nodes directly on the canvas | `web/src/pages/BuilderPage.tsx` |
 | **FAISS semantic memory** — cross-conversation vector search (all-MiniLM-L6-v2) | `server/app/runtime/memory.py` |
 | **Cron scheduler** — agents fire automatically on a cron schedule (APScheduler) | `server/app/main.py` |
@@ -258,6 +260,22 @@ The challenge required integrating one of: openclaw.ai, LangGraph, CrewAI, AutoG
 3. **Clean separation from the rest of the stack.** LangGraph compiles a `graph_spec` dict into a runnable app via a single function (`compile_graph`). The rest of the platform — the REST API, the WebSocket hub, the Telegram channel — never imports LangGraph directly. Swapping the runtime in the future requires changing only `compiler.py` and `nodes.py`.
 
 **Tradeoffs:** LangGraph is lower-level than CrewAI or AutoGen — there is no built-in agent persona management, tool registry, or memory store. Those concerns are handled explicitly by Helmsman's own layers (`nodes.py`, `tools.py`, `db/`), which keeps the architecture transparent but requires more code than a higher-level framework would.
+
+---
+
+## Why LangChain?
+
+LangChain (`langchain-core`, `langchain-openai`, `langchain-anthropic`, `langchain-google-genai`) is used exclusively in [`server/app/runtime/llm.py`](server/app/runtime/llm.py) as a thin provider abstraction — no chains, agents, or retrievers are used.
+
+**Three reasons it was worth the dependency:**
+
+1. **Single call interface across six providers.** Every provider — OpenAI, Anthropic, Gemini, Groq, Mistral, OpenRouter — is invoked through the same `await client.ainvoke(messages)` call. Without it, each provider would require its own SDK, its own async interface, and its own error handling.
+
+2. **Shared message types.** `HumanMessage`, `AIMessage`, and `SystemMessage` from `langchain-core` are accepted by all provider clients. Helmsman converts its internal `{"role": ..., "content": ...}` dicts to these types once, in one place, and every backend handles the rest.
+
+3. **OpenAI-compatible providers for free.** Groq, Mistral, and OpenRouter all speak the OpenAI API format. Rather than bundle three separate clients, `ChatOpenAI` is reused with a custom `base_url` per provider — adding a new OpenAI-compatible endpoint is a two-line change.
+
+**Tradeoffs:** `langchain-core` and its provider packages add non-trivial install weight (~30 packages) for what is ultimately a message-format adapter and async HTTP wrapper. The same result could be achieved with the raw provider SDKs at the cost of per-provider glue code in `llm.py`.
 
 ---
 
