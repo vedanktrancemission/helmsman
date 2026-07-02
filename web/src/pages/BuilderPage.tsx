@@ -158,6 +158,16 @@ export default function BuilderPage() {
     setShowAddNode(false);
   };
 
+  const deleteSelectedNode = () => {
+    const toDelete = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
+    if (toDelete.size === 0) return;
+    setNodes((ns) => ns.filter((n) => !toDelete.has(n.id)));
+    setEdges((es) => es.filter((e) => !toDelete.has(e.source) && !toDelete.has(e.target)));
+    if (current && toDelete.has(current.graph_spec.entry)) {
+      setCurrent({ ...current, graph_spec: { ...current.graph_spec, entry: "" } });
+    }
+  };
+
   const save = async () => {
     if (!current) return;
     const spec = flowToSpec(nodes, edges, current.graph_spec);
@@ -224,6 +234,13 @@ export default function BuilderPage() {
           </button>
           <button onClick={() => setShowAddNode((v) => !v)} disabled={!current}>
             {showAddNode ? "Cancel" : "+ Add Node"}
+          </button>
+          <button
+            onClick={deleteSelectedNode}
+            disabled={!current || !nodes.some((n) => n.selected)}
+            style={{ color: "var(--red)", borderColor: "var(--red)" }}
+          >
+            Delete Node
           </button>
         </div>
 
