@@ -136,9 +136,13 @@ export default function BuilderPage() {
   const newWorkflow = async () => {
     const name = window.prompt("Workflow name:", "My Workflow");
     if (!name) return;
-    const wf = await api.createWorkflow(name);
-    setWorkflows(await api.listWorkflows());
-    loadWorkflow(wf);
+    try {
+      const wf = await api.createWorkflow(name);
+      setWorkflows(await api.listWorkflows());
+      loadWorkflow(wf);
+    } catch (err: any) {
+      setOutput("error: " + err.message);
+    }
   };
 
   const addNode = () => {

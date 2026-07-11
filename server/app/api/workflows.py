@@ -27,7 +27,7 @@ def list_workflows(db: Session = Depends(get_db)):
 
 @router.post("", response_model=WorkflowOut, status_code=201)
 def create_workflow(payload: WorkflowCreate, db: Session = Depends(get_db)):
-    if payload.graph_spec:
+    if payload.graph_spec.get("nodes"):
         try:
             validate_spec(payload.graph_spec)
         except WorkflowSpecError as exc:
@@ -70,7 +70,7 @@ def update_workflow(workflow_id: str, payload: WorkflowUpdate, db: Session = Dep
     if not wf:
         raise HTTPException(404, "workflow not found")
     data = payload.model_dump(exclude_unset=True)
-    if "graph_spec" in data and data["graph_spec"]:
+    if "graph_spec" in data and data["graph_spec"].get("nodes"):
         try:
             validate_spec(data["graph_spec"])
         except WorkflowSpecError as exc:
