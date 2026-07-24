@@ -65,3 +65,23 @@ class SemanticMemory:
 
 def get_memory(agent_id: str) -> SemanticMemory:
     return SemanticMemory(agent_id)
+
+
+def semantic_context(agent_id: str, query: str, k: int = 4) -> str:
+    """Return a formatted block of relevant past memory for agent_id, or '' if none."""
+    try:
+        results = get_memory(agent_id).search(query, k=k)
+    except Exception:
+        return ""
+    if not results:
+        return ""
+    return "Relevant past context:\n" + "\n".join(f"- {r}" for r in results)
+
+
+def store_interaction(agent_id: str, user_msg: str, reply: str) -> None:
+    try:
+        mem = get_memory(agent_id)
+        mem.add(f"User: {user_msg}")
+        mem.add(f"Assistant: {reply}")
+    except Exception:
+        pass

@@ -15,6 +15,7 @@ from app.runtime.nodes import ExecContext
 
 def agent_to_config(agent: Agent) -> dict:
     return {
+        "id": agent.id,
         "name": agent.name,
         "role": agent.role,
         "system_prompt": agent.system_prompt,
@@ -22,6 +23,8 @@ def agent_to_config(agent: Agent) -> dict:
         "tools": agent.tools or [],
         "guardrails": agent.guardrails or {},
         "interaction_rules": agent.interaction_rules or {},
+        "skills": agent.skills or [],
+        "memory_config": agent.memory_config or {},
     }
 
 

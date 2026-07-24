@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.db.models import Agent, Run
 from app.db.session import get_db
 from app.runtime.executor import run_persisted
+from app.runtime.memory import semantic_context, store_interaction
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -62,26 +63,12 @@ def _conversation_context(db: Session, thread_id: str) -> str:
 
 
 def _semantic_context(agent_id: str, query: str) -> str:
-    try:
-        from app.runtime.memory import get_memory
-        mem = get_memory(agent_id)
-        results = mem.search(query, k=4)
-        if not results:
-            return ""
-        block = "\n".join(f"- {r}" for r in results)
-        return f"Relevant past context:\n{block}\n\nUser: "
-    except Exception:
-        return ""
+    block = semantic_context(agent_id, query)
+    return f"{block}\n\nUser: " if block else ""
 
 
 def _store_in_memory(agent_id: str, user_msg: str, reply: str) -> None:
-    try:
-        from app.runtime.memory import get_memory
-        mem = get_memory(agent_id)
-        mem.add(f"User: {user_msg}")
-        mem.add(f"Assistant: {reply}")
-    except Exception:
-        pass
+    store_interaction(agent_id, user_msg, reply)
 
 
 @router.post("", response_model=ChatResponse)

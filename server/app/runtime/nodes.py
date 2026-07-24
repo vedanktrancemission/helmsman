@@ -7,6 +7,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from app.runtime.llm import BaseLLM, get_llm
+from app.runtime.memory import semantic_context, store_interaction
 from app.runtime.tools import list_tools, run_tool
 
 _CALL_RE = re.compile(r"CALL\s+(\w+)\s*(\{.*\})?", re.DOTALL)
@@ -81,10 +82,17 @@ def make_agent_node(agent: dict, ctx: ExecContext, node_name: str):
     allowed_tools = set(agent.get("tools") or [])
     max_output_chars = int(guardrails.get("max_output_chars", 0) or 0)
     llm: BaseLLM = ctx.llm_factory(agent.get("model"))
+    agent_id = agent.get("id")
+    semantic_memory = agent_id and (agent.get("memory_config") or {}).get("type") == "semantic"
 
     async def node(state: dict) -> dict:
         await ctx.emit({"type": "node_start", "run_id": ctx.run_id, "node": node_name})
+        query = state.get("input", "")
         system = _build_system(agent)
+        if semantic_memory:
+            context = semantic_context(agent_id, query)
+            if context:
+                system = f"{system}\n{context}".strip()
         messages = _build_messages(state, agent)
         final = ""
 
@@ -137,6 +145,9 @@ def make_agent_node(agent: dict, ctx: ExecContext, node_name: str):
 
         if max_output_chars and len(final) > max_output_chars:
             final = final[:max_output_chars] + " …[truncated by guardrail]"
+
+        if semantic_memory:
+            store_interaction(agent_id, query, final)
 
         await ctx.record_message(
             {"sender": node_name, "recipient": "workflow", "role": "agent",
