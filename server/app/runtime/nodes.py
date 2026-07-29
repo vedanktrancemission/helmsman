@@ -47,16 +47,21 @@ def _build_system(agent: dict) -> str:
     if skills:
         lines.append(f"Your skills include: {', '.join(skills)}.")
     guardrails = agent.get("guardrails") or {}
+    allowed = agent.get("tools") or []
     if guardrails.get("restrict_to_role") and role:
+        exception = (
+            f" This restriction does not apply to your available tools ({', '.join(allowed)}): "
+            "if the request directly calls for one of them, use it and answer normally."
+            if allowed else ""
+        )
         lines.append(
             f"IMPORTANT: You must ONLY respond to queries directly related to your role as {name} ({role}). "
             "If the user asks about anything outside this domain, politely decline and redirect them: "
-            f"say you are specialized in {role} topics and cannot help with that request."
+            f"say you are specialized in {role} topics and cannot help with that request.{exception}"
         )
     rules = agent.get("interaction_rules") or {}
     if rules.get("instructions"):
         lines.append(f"Interaction rules: {rules['instructions']}")
-    allowed = agent.get("tools") or []
     if allowed:
         catalog = {t["name"]: t["description"] for t in list_tools()}
         tool_docs = "\n".join(f"- {n}: {catalog.get(n, '')}" for n in allowed)
