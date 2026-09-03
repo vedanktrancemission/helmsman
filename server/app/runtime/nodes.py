@@ -73,10 +73,33 @@ def _build_system(agent: dict) -> str:
     return "\n".join(x for x in lines if x).strip()
 
 
+def _loop_context(state: dict) -> str:
+    """Describe the innermost active loop iteration, if the run is inside one."""
+    loops = state.get("loop") or {}
+    name = loops.get("__active__")
+    entry = loops.get(name) if name else None
+    if not isinstance(entry, dict) or entry.get("exhausted"):
+        return ""
+    parts = [f"loop={name}", f"iteration={entry.get('count', 0)}"]
+    if entry.get("total") is not None:
+        parts.append(f"of {entry['total']}")
+    if entry.get("item") is not None:
+        parts.append(f"item={entry['item']!r}")
+    return "LOOP CONTEXT: " + ", ".join(parts)
+
+
 def _build_messages(state: dict, agent: dict) -> list[dict]:
     msgs: list[dict] = [{"role": "user", "content": f"TASK: {state.get('input', '')}", "name": "task"}]
     for h in state.get("history", []):
         msgs.append({"role": "user", "content": h["content"], "name": h["name"]})
+    loop_note = _loop_context(state)
+    if loop_note:
+        msgs.append(
+            {
+                "role": "user", "name": "loop",
+                "content": f"{loop_note}\nHandle only this iteration's item.",
+            }
+        )
     return msgs
 
 

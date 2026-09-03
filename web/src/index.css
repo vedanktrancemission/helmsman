@@ -23,6 +23,15 @@ input, textarea, select {
   background: var(--bg); color: var(--text); border: 1px solid var(--border);
   border-radius: 6px; padding: 6px 8px; width: 100%; font-size: 13px;
 }
+/* Run input: grows with its content (height is set in JS), scrolls past the cap. */
+.run-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px; line-height: 1.55; resize: vertical;
+  min-height: 34px; max-height: 320px; overflow-y: auto;
+  white-space: pre; overflow-x: auto;
+}
+.run-input::placeholder { color: var(--muted); opacity: .7; }
+.run-input:focus { outline: none; border-color: var(--accent); }
 .app { display: flex; flex-direction: column; height: 100vh; }
 .topbar {
   display: flex; align-items: center; gap: 18px; padding: 10px 18px;
@@ -46,10 +55,35 @@ input, textarea, select {
 .muted { color: var(--muted); font-size: 12px; }
 .stat { font-size: 22px; font-weight: 700; }
 .logline { font-family: ui-monospace, monospace; font-size: 12px; padding: 2px 0; border-bottom: 1px solid var(--border); }
-.builder { height: calc(100vh - 160px); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.builder { height: calc(100vh - 200px); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.inspector { width: 320px; flex: 0 0 320px; overflow: auto; height: calc(100vh - 200px); }
 .react-flow__node { font-size: 12px; }
 .node-card { background: var(--panel-2); border: 1px solid var(--accent-2); border-radius: 8px; padding: 8px 12px; min-width: 120px; }
 .node-card .role { color: var(--muted); font-size: 11px; }
+.node-card.selected { box-shadow: 0 0 0 2px var(--accent); }
+
+/* control-flow nodes */
+.node-card.control { min-width: 190px; max-width: 230px; padding: 8px 10px 6px; border-color: var(--accent); }
+.node-card.control.if { border-color: var(--accent-2); }
+.node-card.control.switch { border-color: #a371f7; }
+.node-card.control.while, .node-card.control.for { border-color: var(--accent); }
+.node-head { display: flex; align-items: baseline; gap: 6px; }
+.node-icon { color: var(--accent); }
+.node-title { font-weight: 600; }
+.node-kind { margin-left: auto; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .3px; }
+.node-expr {
+  font-family: ui-monospace, monospace; font-size: 10px; color: var(--text);
+  background: var(--bg); border-radius: 4px; padding: 3px 6px; margin: 6px 0 4px;
+  max-height: 30px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.node-meta { color: var(--muted); font-size: 10px; margin-bottom: 4px; }
+.branch-list { border-top: 1px solid var(--border); margin-top: 4px; }
+.branch-row { position: relative; padding: 2px 12px 2px 0; text-align: right; }
+.branch-name { font-size: 10px; font-weight: 600; }
+.branch-open { color: var(--muted); font-weight: 400; }
+.branch-handle { width: 8px; height: 8px; border: 1px solid var(--bg); right: -5px; }
+.react-flow__handle { background: var(--accent-2); }
+.react-flow__edge-text { fill: var(--muted); font-size: 10px; }
 @keyframes blink { 0%, 80%, 100% { opacity: 0 } 40% { opacity: 1 } }
 .typing-dots { letter-spacing: 2px; }
 .typing-dots::after { content: '...'; animation: blink 1.4s infinite; }

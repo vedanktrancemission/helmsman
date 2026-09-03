@@ -236,7 +236,8 @@ Multiple browser tabs can connect simultaneously — all receive the same events
 | **Cron scheduler** — agents fire automatically on a cron schedule (APScheduler) | `server/app/main.py` |
 | **Domain restriction guardrail** — agent refuses off-topic queries | `server/app/runtime/nodes.py` (`restrict_to_role`) |
 | Visual workflow builder with conditions + feedback loops | `web/src/pages/BuilderPage.tsx` + `server/app/runtime/compiler.py` |
-| 2 pre-built templates | `server/app/templates/builtin.py` (research-loop, triage-routing) |
+| **Control-flow nodes** — if/else, switch, while loop, for loop as first-class canvas nodes with per-branch handles and an expression inspector | `server/app/runtime/control.py` + `web/src/components/FlowNodes.tsx` |
+| 6 pre-built templates, incl. one runnable example per control-flow node kind | `server/app/templates/builtin.py` |
 | Real runtime executing agent logic | LangGraph `StateGraph` in `compiler.py` / `nodes.py` |
 | Real tool execution | `server/app/runtime/tools.py` (calculator, http_get, current_time) |
 | Async agent-to-agent communication | `server/app/runtime/bus.py` (in-memory / Redis Streams) |
@@ -307,13 +308,90 @@ The seam between builder and runtime is `compiler.compile_graph(graph_spec → S
 ---
 
 ## How a workflow runs
-1. The builder serializes the canvas to a `graph_spec` (nodes = agents, edges = routing).
-2. `compile_graph` turns it into a LangGraph `StateGraph` — conditional edges become
-   routers, loop-back edges become cycles.
+1. The builder serializes the canvas to a `graph_spec` (nodes = agents and control-flow
+   nodes, edges = routing).
+2. `compile_graph` turns it into a LangGraph `StateGraph` — control-flow nodes and
+   conditional edges become routers, loop-back edges become cycles.
 3. Each node calls its LLM, runs a bounded real-tool loop, enforces guardrails
    (tool allowlist, token ceiling), and publishes its output onto the bus.
 4. The executor persists the run, every message, and per-call token/cost usage.
 5. The WebSocket hub streams every bus event live to the Monitor tab.
+
+---
+
+## Control-flow nodes
+
+Besides agent nodes, the canvas has four control-flow nodes. They cost no tokens: each
+one evaluates a small Python expression against the run state, then routes to one of its
+labelled branch handles. Any branch you leave unwired ends the run.
+
+| Node | Config | Branches |
+|---|---|---|
+| **If / Else** | `condition` | `true`, `false` |
+| **Switch** | `expression`, `cases` | one per case, plus `default` |
+| **While Loop** | `condition`, `max_iterations` | `body`, `exit` |
+| **For Loop** | `items`, `max_iterations` | `body`, `exit` |
+
+A loop's `body` branch must lead back to the loop node — that back edge is the cycle.
+`max_iterations` is a hard guard, so a condition that never goes false still terminates.
+A `for` node's `items` expression is coerced to a list: a string splits on newlines, an
+int becomes a range, a dict becomes its items.
+
+Expressions may read `input`, `last_output`, `outputs` (per-node output dict), `history`,
+`steps`, and — inside a loop — `item`, `index`, `count`, `total`, `results`, plus `loop`
+for any loop by name (`loop['EachItem']['results']`). An expression that raises is
+treated as falsy rather than failing the run, and only a small builtin allowlist is
+exposed. Agents in a loop body receive the current `item` in their prompt automatically.
+
+```json
+{
+  "entry": "EachItem",
+  "nodes": [
+    {"name": "EachItem", "type": "for",
+     "config": {"items": "outputs['Planner'].splitlines()", "max_iterations": 5}},
+    {"name": "AnyRisk", "type": "if",
+     "config": {"condition": "any('RISK' in str(r).upper() for r in loop['EachItem']['results'])"}}
+  ],
+  "edges": [
+    {"source": "EachItem", "branch": "body", "target": "Checker"},
+    {"source": "Checker", "target": "EachItem"},
+    {"source": "EachItem", "branch": "exit", "target": "AnyRisk"},
+    {"source": "AnyRisk", "branch": "true", "target": "Escalate"},
+    {"source": "AnyRisk", "branch": "false", "target": "Approve"}
+  ]
+}
+```
+
+Step-by-step walkthroughs for building each of these by hand on the canvas live in
+[`docs/CONTROL_FLOW_EXAMPLES.md`](docs/CONTROL_FLOW_EXAMPLES.md).
+
+### Try each one end to end
+
+The template picker in the **Builder** tab ships one minimal example per node kind. Each
+is driven straight from the run input, so every branch is reachable with the offline
+`fake` model — no API key needed. Pick a template, type the input, hit **Run ▶**, then
+open the **Monitor** tab to see which branch was taken.
+
+| Template | Run input | What you should see |
+|---|---|---|
+| **Example: If / Else** | `urgent: login is broken` | `Intake` → `IsUrgent` → **true** → `RushHandler` |
+| | `review this when free` | `Intake` → `IsUrgent` → **false** → `NormalHandler` |
+| **Example: Switch** | `billing question about my invoice` | `PickLane` → **billing** → `BillingLane` |
+| | `tech issue with the app` | `PickLane` → **tech** → `TechLane` |
+| | `hello there` | no case matches → **default** → `GeneralLane` |
+| **Example: For loop** | `alpha, beta, gamma` | `Handler` runs 3×, one per item, then `Recap` |
+| | `a,b,c,d,e,f,g` | `Handler` runs 5×, capped by `max_iterations`, then `Recap` |
+| **Example: While loop** | anything, e.g. `write a launch tweet` | `Draft` → `Review` → loop **body** → `Writer` → `Review` … until `APPROVE`, then **exit** → `Ship` |
+
+In the Monitor tab each decision shows as a `control`-role message like
+`EachItem → branch:body` with the reason (`item 2/3: 'beta'`, `condition false after 2
+iteration(s)`, `iteration guard reached (4)`). The same runs are covered by
+`server/tests/test_control_flow.py`, so `pytest -q` asserts every branch above.
+
+`recursion_limit` defaults to a loop-aware budget derived from each loop's
+`max_iterations`; set it explicitly in the spec to override. Every branch decision is
+emitted on the bus as a `control` event and persisted as a `control`-role message, so the
+Monitor tab shows which way each run went.
 
 ---
 
@@ -350,6 +428,10 @@ The scheduler starts on server boot and registers one APScheduler job per agent 
 `server/app/templates/builtin.py`; it appears in the builder's template picker
 automatically via `/api/templates`.
 
+**Add a control-flow node kind** — add its branch keys and node factory to
+`server/app/runtime/control.py`, then mirror the entry in `web/src/lib/nodeKinds.ts`
+so the canvas renders its handles and inspector fields.
+
 **Add a tool** — add a function and registry entry in `server/app/runtime/tools.py`;
 it becomes selectable in the agent config UI.
 
@@ -363,7 +445,9 @@ it becomes selectable in the agent config UI.
 cd server && PYTHONPATH=. pytest -q
 ```
 Covers agent CRUD, workflow execution (conditional edge + feedback loop + persistence),
-message delivery (inbound channel → runtime → persisted history), and bus event streaming.
+control flow (if/else, switch, while, for, nesting, guards, spec validation, API
+round-trip), message delivery (inbound channel → runtime → persisted history), and bus
+event streaming.
 
 ---
 
@@ -374,5 +458,6 @@ The `docs/` directory contains:
 | File | Contents |
 |---|---|
 | `docs/DOCUMENTATION.md` | Full platform documentation with architecture, tab-by-tab UI walkthrough, data model, and extension guide |
+| `docs/CONTROL_FLOW_EXAMPLES.md` | Step-by-step guide to building an if/else, switch, for-loop, and while-loop workflow by hand on the canvas, with the exact inputs and expected trail for every branch |
 | `docs/screenshots/` | UI screenshots for all three tabs (Agents, Builder, Monitor) and Telegram bot conversations |
 | `docs/screenshots/demo/` | Step-by-step screenshots of the 3-agent Research → Write → Review live demo run |

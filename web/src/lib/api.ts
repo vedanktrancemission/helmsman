@@ -17,8 +17,26 @@ export interface Agent {
   guardrails: Record<string, any>;
 }
 
+/** Control-flow node kinds, plus the plain agent node. */
+export type NodeKind = "agent" | "if" | "switch" | "while" | "for";
+
+export interface NodeConfig {
+  /** if / while: the boolean expression to evaluate. */
+  condition?: string;
+  /** switch: the expression whose value selects a case. */
+  expression?: string;
+  /** switch: the case values wired to their own branch handles. */
+  cases?: string[];
+  /** for: the expression producing the collection to iterate. */
+  items?: string;
+  /** for / while: hard cap on body passes. */
+  max_iterations?: number;
+}
+
 export interface NodeSpec {
   name: string;
+  type?: NodeKind;
+  config?: NodeConfig;
   agent_id?: string;
   agent?: Partial<Agent>;
   position?: { x: number; y: number };
@@ -26,6 +44,8 @@ export interface NodeSpec {
 export interface EdgeSpec {
   source: string;
   target?: string;
+  /** Branch handle on a control node this edge leaves from. */
+  branch?: string;
   conditional?: boolean;
   condition?: string;
   branches?: Record<string, string>;
