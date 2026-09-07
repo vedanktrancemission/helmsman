@@ -27,6 +27,30 @@ function ExprField({
   );
 }
 
+function CasesField({
+  cases, onChange,
+}: { cases: string[]; onChange: (cases: string[]) => void }) {
+  // Hold the raw text while editing: parsing on every keystroke would eat the
+  // comma (and trailing space) the moment it is typed, before a second case exists.
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <input
+      value={draft ?? cases.join(", ")}
+      spellCheck={false}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        onChange(
+          e.target.value
+            .split(",")
+            .map((c) => c.trim())
+            .filter((c) => c && c !== "default"),
+        );
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  );
+}
+
 export default function NodeInspector({ spec, unwired, onChange }: Props) {
   const [showVars, setShowVars] = useState(false);
   const kind = kindOf(spec);
@@ -77,17 +101,10 @@ export default function NodeInspector({ spec, unwired, onChange }: Props) {
           />
           <div className="field">
             <div className="label">Cases (comma separated)</div>
-            <input
-              value={(cfg.cases || []).join(", ")}
-              spellCheck={false}
-              onChange={(e) =>
-                setCfg({
-                  cases: e.target.value
-                    .split(",")
-                    .map((c) => c.trim())
-                    .filter((c) => c && c !== "default"),
-                })
-              }
+            <CasesField
+              key={spec.name}
+              cases={cfg.cases || []}
+              onChange={(cases) => setCfg({ cases })}
             />
             <div className="muted">
               Each case gets its own handle; unmatched values fall to <code>default</code>.
