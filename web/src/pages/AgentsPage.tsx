@@ -98,14 +98,17 @@ export default function AgentsPage() {
           <div className="label">Model</div>
           <select value={draft.model || "fake"} onChange={(e) => setDraft({ ...draft, model: e.target.value })}>
             <option value="fake">fake (offline)</option>
-            <option value="google/gemma-4-31b-it:free">google/gemma-4-31b-it:free (OpenRouter)</option>
-            <option value="google/gemma-4-26b-a4b-it:free">google/gemma-4-26b-a4b-it:free (OpenRouter)</option>
-            <option value="moonshotai/kimi-k2.6:free">moonshotai/kimi-k2.6:free (OpenRouter)</option>
-            <option value="nvidia/nemotron-3-super-120b-a12b:free">nvidia/nemotron-3-super-120b-a12b:free (OpenRouter)</option>
-            <option value="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (OpenRouter)</option>
+            <option value="groq:openai/gpt-oss-120b">gpt-oss-120b (Groq)</option>
+            <option value="groq:openai/gpt-oss-20b">gpt-oss-20b (Groq)</option>
+            <option value="groq:qwen/qwen3.8-27b">qwen3.8-27b (Groq)</option>
+            <option value="groq:groq/compound-mini">compound-mini (Groq)</option>
+            <option value="meta-llama/llama-3.3-70b-instruct:free">meta-llama/llama-3.3-70b-instruct:free (OpenRouter)</option>
+            <option value="deepseek/deepseek-r1:free">deepseek/deepseek-r1:free (OpenRouter)</option>
+            <option value="google/gemma-3-27b-it:free">google/gemma-3-27b-it:free (OpenRouter)</option>
+            <option value="qwen/qwen3-235b-a22b:free">qwen/qwen3-235b-a22b:free (OpenRouter)</option>
             <option value="gemini-2.0-flash">gemini-2.0-flash (Gemini)</option>
-            <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash (Gemini)</option>
-            <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro (Gemini)</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash (Gemini)</option>
+            <option value="gemini-2.5-pro">gemini-2.5-pro (Gemini)</option>
             <option value="mistral-small-latest">mistral-small-latest (Mistral)</option>
             <option value="mistral-medium-latest">mistral-medium-latest (Mistral)</option>
             <option value="open-mistral-7b">open-mistral-7b (Mistral)</option>

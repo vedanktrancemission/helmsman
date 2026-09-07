@@ -126,6 +126,25 @@ class LangChainLLM(BaseLLM):
         return LLMResult(text=resp.content, prompt_tokens=pt, completion_tokens=ct, model=self.model)
 
 
+_KNOWN_PROVIDERS = frozenset(
+    {"openai", "anthropic", "groq", "openrouter", "mistral", "gemini", "fake"}
+)
+
+
+def _split_provider(model: str) -> tuple[str, str]:
+    """Split an explicit "provider:model" override, e.g. "groq:openai/gpt-oss-120b".
+
+    Needed because some providers host models whose ids contain "/" (which would
+    otherwise be auto-detected as OpenRouter) or collide with another provider's
+    naming. Returns ("", model) when there is no recognised provider prefix, so
+    ids like "deepseek/deepseek-r1:free" are left untouched.
+    """
+    prefix, sep, rest = model.partition(":")
+    if sep and rest and prefix in _KNOWN_PROVIDERS:
+        return prefix, rest
+    return "", model
+
+
 def _detect_provider(model: str) -> str:
     """Detect LLM provider from model name."""
     if model == "fake":
@@ -163,10 +182,11 @@ def get_llm(model: str | None = None) -> BaseLLM:
     settings = get_settings()
     model = model or settings.default_model
 
+    forced, model = _split_provider(model)
     if model == "fake":
         return FakeLLM()
 
-    provider = _detect_provider(model) or settings.llm_provider
+    provider = forced or _detect_provider(model) or settings.llm_provider
     if provider == "fake":
         return FakeLLM()
 
