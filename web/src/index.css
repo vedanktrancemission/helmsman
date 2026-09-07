@@ -99,3 +99,11 @@ input, textarea, select {
 .chat-markdown table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 13px; }
 .chat-markdown th, .chat-markdown td { border: 1px solid var(--border); padding: 5px 10px; text-align: left; }
 .chat-markdown th { background: var(--bg); font-weight: 600; }
+
+/* Builder run output: Markdown, with wide tables scrolling inside the card. */
+.md-output { overflow-x: auto; }
+.md-output > *:first-child { margin-top: 0; }
+.md-output > *:last-child { margin-bottom: 0; }
+.md-output table { min-width: 560px; }
+.md-output td, .md-output th { vertical-align: top; }
+.md-output pre { white-space: pre-wrap; }

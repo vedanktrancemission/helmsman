@@ -11,12 +11,29 @@ import ReactFlow, {
   useEdgesState,
   useNodesState,
 } from "reactflow";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Agent, GraphSpec, NodeKind, NodeSpec, Template, Workflow, api } from "../lib/api";
 import NodeInspector from "../components/NodeInspector";
 import { FlowNodeData, nodeTypes } from "../components/FlowNodes";
 import { CONTROL_KINDS, KINDS, LOOP_KINDS, branchesOf, isControl, kindOf } from "../lib/nodeKinds";
 
 const END_NAMES = ["END", "__end__"];
+
+/** Agents often emit <br> inside Markdown table cells. Raw HTML is deliberately
+ *  not enabled (model output is untrusted), so fold the tags into something
+ *  Markdown can express: a separator inside a table row, a hard break elsewhere. */
+function normalizeMarkdown(md: string): string {
+  const BR = /<br\s*\/?>/gi;
+  return md
+    .split("\n")
+    .map((line) =>
+      line.trimStart().startsWith("|")
+        ? line.replace(/\s*<br\s*\/?>\s*[•·-]\s*/gi, " · ").replace(/\s*<br\s*\/?>\s*/gi, " · ")
+        : line.replace(BR, "  \n")
+    )
+    .join("\n");
+}
 const isEnd = (t?: string) => !!t && END_NAMES.includes(t);
 
 function branchEdgeStyle(branch: string, loopBack: boolean) {
@@ -517,9 +534,11 @@ export default function BuilderPage() {
           {navigator.platform.startsWith("Mac") ? "⌘" : "Ctrl+"}Enter runs
         </div>
         {output && (
-          <div className="card" style={{ marginTop: 10, whiteSpace: "pre-wrap" }}>
+          <div className="card" style={{ marginTop: 10 }}>
             <div className="label">Output</div>
-            {output}
+            <div className="chat-markdown md-output">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeMarkdown(output)}</ReactMarkdown>
+            </div>
             <div className="muted" style={{ marginTop: 6 }}>
               See the Monitor tab for live inter-agent messages, branch decisions, and cost.
             </div>
