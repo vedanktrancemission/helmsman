@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import "@fontsource-variable/inter";
 import "reactflow/dist/style.css";
 import "./index.css";
 

@@ -15,10 +15,14 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Agent, GraphSpec, NodeKind, NodeSpec, Template, Workflow, api } from "../lib/api";
 import NodeInspector from "../components/NodeInspector";
+import CanvasHero from "../components/CanvasHero";
 import { FlowNodeData, nodeTypes } from "../components/FlowNodes";
 import { CONTROL_KINDS, KINDS, LOOP_KINDS, branchesOf, isControl, kindOf } from "../lib/nodeKinds";
 
 const END_NAMES = ["END", "__end__"];
+
+/** Horizontal room the floating bars yield when the inspector is open. */
+const INSPECTOR_GUTTER = 348;
 
 /** Agents often emit <br> inside Markdown table cells. Raw HTML is deliberately
  *  not enabled (model output is untrusted), so fold the tags into something
@@ -36,12 +40,21 @@ function normalizeMarkdown(md: string): string {
 }
 const isEnd = (t?: string) => !!t && END_NAMES.includes(t);
 
+/** Plain agent-to-agent edges: dim enough to sit behind the nodes. */
+const PLAIN_EDGE = "#46566e";
+
+/** Arrowheads are SVG markers, so they take their colour here, not from CSS. */
+function arrow(color: string) {
+  return { type: MarkerType.ArrowClosed, color };
+}
+
 function branchEdgeStyle(branch: string, loopBack: boolean) {
   const stroke =
     branch === "true" ? "#3fb950"
     : branch === "false" ? "#f85149"
     : branch === "body" ? "#f5a623"
-    : "#8b98a5";
+    // switch cases / exit: neutral, and dim enough not to outshine the nodes
+    : "#5a6b82";
   return { stroke, strokeWidth: loopBack ? 2 : 1.5 };
 }
 
@@ -69,7 +82,7 @@ function specToFlow(spec: GraphSpec): { nodes: Node<FlowNodeData>[]; edges: Edge
         label: e.branch,
         animated: loopBack,
         style: branchEdgeStyle(e.branch, loopBack),
-        markerEnd: { type: MarkerType.ArrowClosed },
+        markerEnd: arrow(branchEdgeStyle(e.branch, loopBack).stroke),
         data: { branch: e.branch },
       });
     } else if (e.conditional && e.branches) {
@@ -81,8 +94,8 @@ function specToFlow(spec: GraphSpec): { nodes: Node<FlowNodeData>[]; edges: Edge
           target,
           label: `${key}: ${e.condition?.slice(0, 24) || ""}`,
           animated: true,
-          style: { stroke: "#f5a623" },
-          markerEnd: { type: MarkerType.ArrowClosed },
+          style: { stroke: "#f5a623", strokeWidth: 1.5 },
+          markerEnd: arrow("#f5a623"),
           data: { conditional: true, key, condition: e.condition },
         });
       });
@@ -91,7 +104,8 @@ function specToFlow(spec: GraphSpec): { nodes: Node<FlowNodeData>[]; edges: Edge
         id: `e${i}`,
         source: e.source,
         target: e.target,
-        markerEnd: { type: MarkerType.ArrowClosed },
+        style: { stroke: PLAIN_EDGE, strokeWidth: 1.5 },
+        markerEnd: arrow(PLAIN_EDGE),
       });
     }
   });
@@ -245,7 +259,7 @@ export default function BuilderPage() {
               label: branch,
               animated: loopBack,
               style: branchEdgeStyle(branch, loopBack),
-              markerEnd: { type: MarkerType.ArrowClosed },
+              markerEnd: arrow(branchEdgeStyle(branch, loopBack).stroke),
               data: { branch },
             },
             // One target per branch handle: re-dragging a branch moves it.
@@ -254,7 +268,12 @@ export default function BuilderPage() {
         );
         return;
       }
-      setEdges((eds) => addEdge({ ...c, markerEnd: { type: MarkerType.ArrowClosed } }, eds));
+      setEdges((eds) =>
+        addEdge(
+          { ...c, style: { stroke: PLAIN_EDGE, strokeWidth: 1.5 }, markerEnd: arrow(PLAIN_EDGE) },
+          eds
+        )
+      );
     },
     [nodes, setEdges]
   );
@@ -383,9 +402,42 @@ export default function BuilderPage() {
     }
   };
 
+  const inspectorOpen = selectedNode !== null;
+  const gutter = inspectorOpen ? { right: INSPECTOR_GUTTER } : undefined;
+
   return (
-    <div>
-      <div className="card" style={{ marginBottom: 14 }}>
+    <div className="builder-page" ref={paneRef}>
+      <ReactFlow
+        nodes={displayNodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        onInit={(instance) => (flowRef.current = instance)}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        fitView
+      >
+        <Background color="#2a3646" gap={18} size={1} />
+        <Controls position="bottom-left" />
+      </ReactFlow>
+
+      {nodes.length === 0 && (
+        <div className="canvas-empty">
+          <div className="canvas-empty-3d">
+            <CanvasHero />
+          </div>
+          <div className="canvas-empty-copy">
+            <h2>{current ? current.name : "Nothing loaded"}</h2>
+            <p className="muted">
+              {current
+                ? "Add an agent or a control-flow node to start wiring this graph."
+                : "Start from a template, or pick an existing workflow above."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="float-bar top" style={gutter}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <span className="label" style={{ margin: 0 }}>Templates:</span>
           {templates.map((t) => (
@@ -471,43 +523,34 @@ export default function BuilderPage() {
               </>
             )}
             <span className="label" style={{ margin: "0 0 0 16px" }}>Control flow:</span>
-            {CONTROL_KINDS.map((kind) => (
-              <button key={kind} onClick={() => addControlNode(kind)} title={KINDS[kind].hint}>
-                {KINDS[kind].icon} {KINDS[kind].label}
-              </button>
-            ))}
+            {CONTROL_KINDS.map((kind) => {
+              const { Icon } = KINDS[kind];
+              return (
+                <button
+                  key={kind}
+                  className="btn-icon"
+                  onClick={() => addControlNode(kind)}
+                  title={KINDS[kind].hint}
+                >
+                  <Icon size={13} strokeWidth={2.2} /> {KINDS[kind].label}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 14, alignItems: "stretch" }}>
-        <div className="builder" style={{ flex: 1 }} ref={paneRef}>
-          <ReactFlow
-            nodes={displayNodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            onInit={(instance) => (flowRef.current = instance)}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            fitView
-          >
-            <Background color="#2c3947" />
-            <Controls />
-          </ReactFlow>
+      {selectedNode && (
+        <div className="float-panel inspector">
+          <NodeInspector
+            spec={selectedNode.data.spec}
+            unwired={unwiredByNode[selectedNode.id] || []}
+            onChange={updateSelectedSpec}
+          />
         </div>
-        {selectedNode && (
-          <div className="card inspector">
-            <NodeInspector
-              spec={selectedNode.data.spec}
-              unwired={unwiredByNode[selectedNode.id] || []}
-              onChange={updateSelectedSpec}
-            />
-          </div>
-        )}
-      </div>
+      )}
 
-      <div className="card" style={{ marginTop: 14 }}>
+      <div className="float-bar bottom" style={gutter}>
         <div className="label">Run input</div>
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
           <textarea
@@ -534,7 +577,7 @@ export default function BuilderPage() {
           {navigator.platform.startsWith("Mac") ? "⌘" : "Ctrl+"}Enter runs
         </div>
         {output && (
-          <div className="card" style={{ marginTop: 10 }}>
+          <div className="card run-output" style={{ marginTop: 10 }}>
             <div className="label">Output</div>
             <div className="chat-markdown md-output">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeMarkdown(output)}</ReactMarkdown>

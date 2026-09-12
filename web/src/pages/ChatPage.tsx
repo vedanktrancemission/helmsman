@@ -138,7 +138,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 56px)" }}>
+    <div style={{ display: "flex", height: "100%" }}>
 
       {/* Sidebar — past conversations */}
       <div style={{ width: 220, borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--panel)", flexShrink: 0 }}>

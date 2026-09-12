@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { Bot } from "lucide-react";
 import { Handle, NodeProps, Position } from "reactflow";
 import { NodeSpec } from "../lib/api";
 import { KINDS, branchesOf, kindOf } from "../lib/nodeKinds";
@@ -45,6 +46,7 @@ function BranchRow({ branch, unwired }: { branch: string; unwired: boolean }) {
 function ControlNode({ data, selected }: NodeProps<FlowNodeData>) {
   const kind = kindOf(data.spec);
   const info = KINDS[kind];
+  const { Icon } = info;
   const cfg = data.spec.config || {};
   const branches = branchesOf(data.spec);
   const unwired = new Set(data.unwired || []);
@@ -54,7 +56,7 @@ function ControlNode({ data, selected }: NodeProps<FlowNodeData>) {
     <div className={`node-card control ${kind} ${selected ? "selected" : ""}`}>
       <Handle type="target" position={Position.Left} />
       <div className="node-head">
-        <span className="node-icon">{info.icon}</span>
+        <span className="node-icon"><Icon size={13} strokeWidth={2.2} /></span>
         <span className="node-title">{data.label}</span>
         <span className="node-kind">{info.label}</span>
       </div>
@@ -78,7 +80,7 @@ function AgentNode({ data, selected }: NodeProps<FlowNodeData>) {
     <div className={`node-card agent ${selected ? "selected" : ""}`}>
       <Handle type="target" position={Position.Left} />
       <div className="node-head">
-        <span className="node-icon">◆</span>
+        <span className="node-icon"><Bot size={13} strokeWidth={2.2} /></span>
         <span className="node-title">{data.label}</span>
       </div>
       {data.role && <div className="role">{data.role}</div>}

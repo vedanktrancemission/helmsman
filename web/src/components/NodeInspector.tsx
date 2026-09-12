@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Bot } from "lucide-react";
 import { NodeConfig, NodeSpec } from "../lib/api";
 import { EXPRESSION_VARS, KINDS, branchesOf, kindOf } from "../lib/nodeKinds";
 
@@ -55,6 +56,7 @@ export default function NodeInspector({ spec, unwired, onChange }: Props) {
   const [showVars, setShowVars] = useState(false);
   const kind = kindOf(spec);
   const info = KINDS[kind];
+  const { Icon } = info;
   const cfg: NodeConfig = spec.config || {};
   const setCfg = (patch: NodeConfig) => onChange({ config: { ...cfg, ...patch } });
 
@@ -62,7 +64,7 @@ export default function NodeInspector({ spec, unwired, onChange }: Props) {
     return (
       <div>
         <div className="label">Selected node</div>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>◆ {spec.name}</div>
+        <div className="inspector-title"><Bot size={14} strokeWidth={2.2} /> {spec.name}</div>
         <div className="muted">
           Agent node — edit its prompt, model, and tools in the Agents tab.
         </div>
@@ -73,8 +75,9 @@ export default function NodeInspector({ spec, unwired, onChange }: Props) {
   return (
     <div>
       <div className="label">Selected node</div>
-      <div style={{ fontWeight: 600, marginBottom: 2 }}>
-        {info.icon} {spec.name} <span className="muted">· {info.label}</span>
+      <div className="inspector-title">
+        <Icon size={14} strokeWidth={2.2} /> {spec.name}{" "}
+        <span className="muted">· {info.label}</span>
       </div>
       <div className="muted" style={{ marginBottom: 10 }}>{info.hint}</div>
 

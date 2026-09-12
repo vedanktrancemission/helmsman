@@ -1,9 +1,11 @@
+import { Bot, GitBranch, LucideIcon, Repeat, RotateCw, Split } from "lucide-react";
 import { NodeKind, NodeSpec } from "./api";
 
 export interface KindInfo {
   kind: NodeKind;
   label: string;
-  icon: string;
+  /** Rendered wherever the kind is shown: canvas, inspector, add-node buttons. */
+  Icon: LucideIcon;
   /** Branch handles this kind exposes, in display order. */
   branches: (spec: NodeSpec) => string[];
   /** Fresh config when a node of this kind is dropped on the canvas. */
@@ -16,7 +18,7 @@ export const KINDS: Record<NodeKind, KindInfo> = {
   agent: {
     kind: "agent",
     label: "Agent",
-    icon: "◆",
+    Icon: Bot,
     branches: () => [],
     defaults: () => undefined,
     hint: "Runs an LLM agent and appends its output to the run.",
@@ -24,7 +26,7 @@ export const KINDS: Record<NodeKind, KindInfo> = {
   if: {
     kind: "if",
     label: "If / Else",
-    icon: "◇",
+    Icon: GitBranch,
     branches: () => ["true", "false"],
     defaults: () => ({ condition: "'urgent' in input.lower()" }),
     hint: "Evaluates a boolean expression and takes the true or false branch.",
@@ -32,7 +34,7 @@ export const KINDS: Record<NodeKind, KindInfo> = {
   switch: {
     kind: "switch",
     label: "Switch",
-    icon: "⑃",
+    Icon: Split,
     branches: (spec) => {
       const cases = (spec.config?.cases || []).map(String).filter((c) => c && c !== "default");
       return [...cases, "default"];
@@ -43,7 +45,7 @@ export const KINDS: Record<NodeKind, KindInfo> = {
   while: {
     kind: "while",
     label: "While Loop",
-    icon: "↻",
+    Icon: RotateCw,
     branches: () => ["body", "exit"],
     defaults: () => ({ condition: "'APPROVE' not in last_output.upper()", max_iterations: 5 }),
     hint: "Repeats the body while the condition holds, up to max iterations.",
@@ -51,7 +53,7 @@ export const KINDS: Record<NodeKind, KindInfo> = {
   for: {
     kind: "for",
     label: "For Loop",
-    icon: "⟳",
+    Icon: Repeat,
     branches: () => ["body", "exit"],
     defaults: () => ({ items: "last_output.splitlines()", max_iterations: 10 }),
     hint: "Runs the body once per item; the body exposes item, index and results.",
