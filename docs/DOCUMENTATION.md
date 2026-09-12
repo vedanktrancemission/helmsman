@@ -54,7 +54,7 @@ The **Agents** tab is where reusable agent personas live. Each agent has:
 | **Name** | Identifier used in graph nodes and inter-agent messages |
 | **Role** | Short label injected into the system prompt |
 | **System Prompt** | Full persona instruction for the LLM |
-| **Model** | `fake` (offline), `gpt-4o-mini`, `llama-3.1-8b-instant`, etc. |
+| **Model** | `fake` (offline), `gpt-4o-mini`, `nvidia/nemotron-3-ultra-550b-a55b:free`, etc. |
 | **Tools** | Checkboxes for `calculator`, `http_get`, `current_time` |
 | **Guardrail: Max Tool Steps** | Caps the tool-call loop per node invocation |
 

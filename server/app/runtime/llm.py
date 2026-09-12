@@ -23,6 +23,27 @@ def _estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
 
+def _content_to_text(content) -> str:
+    """Flatten a LangChain message content into plain text.
+
+    Most providers return a plain string, but Gemini 3.x returns a list of
+    content blocks (the thinking models attach a signature to each). Callers
+    treat LLMResult.text as a str — it is regex-matched for "CALL <tool>" — so
+    anything list-shaped has to be collapsed here.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text") or "")
+        return "".join(parts)
+    return "" if content is None else str(content)
+
+
 class BaseLLM:
     model: str = "base"
 
@@ -120,10 +141,11 @@ class LangChainLLM(BaseLLM):
                 lc_msgs.append(HumanMessage(content=m["content"]))
 
         resp = await self._client.ainvoke(lc_msgs)
+        text = _content_to_text(resp.content)
         meta = getattr(resp, "usage_metadata", None) or {}
         pt = meta.get("input_tokens", _estimate_tokens(system))
-        ct = meta.get("output_tokens", _estimate_tokens(resp.content))
-        return LLMResult(text=resp.content, prompt_tokens=pt, completion_tokens=ct, model=self.model)
+        ct = meta.get("output_tokens", _estimate_tokens(text))
+        return LLMResult(text=text, prompt_tokens=pt, completion_tokens=ct, model=self.model)
 
 
 _KNOWN_PROVIDERS = frozenset(
@@ -137,7 +159,7 @@ def _split_provider(model: str) -> tuple[str, str]:
     Needed because some providers host models whose ids contain "/" (which would
     otherwise be auto-detected as OpenRouter) or collide with another provider's
     naming. Returns ("", model) when there is no recognised provider prefix, so
-    ids like "deepseek/deepseek-r1:free" are left untouched.
+    ids like "poolside/laguna-s-2.1:free" are left untouched.
     """
     prefix, sep, rest = model.partition(":")
     if sep and rest and prefix in _KNOWN_PROVIDERS:

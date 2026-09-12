@@ -3,12 +3,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+# USD per 1K tokens, (prompt, completion). Models absent here — including every
+# OpenRouter ":free" id — are billed at zero.
 PRICING: dict[str, tuple[float, float]] = {
     "fake": (0.0, 0.0),
-    "gpt-4o": (0.005, 0.015),
+    "gpt-4o": (0.0025, 0.01),
     "gpt-4o-mini": (0.00015, 0.0006),
-    "claude-3-5-sonnet-latest": (0.003, 0.015),
-    "claude-3-5-haiku-latest": (0.0008, 0.004),
+    "claude-opus-5": (0.005, 0.025),
+    "claude-sonnet-5": (0.002, 0.01),
+    "claude-haiku-4-5": (0.001, 0.005),
 }
 
 
